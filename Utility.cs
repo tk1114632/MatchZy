@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Net.Http;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -74,6 +75,44 @@ namespace MatchZy
                 catch (Exception e) {
                     Log($"[LoadAdmins FATAL] Error creating the JSON file: {e.Message}");
                 }
+            }
+        }
+
+        private async Task<bool> CheckDBAccess(string steamId)
+        {
+            string hostname = ConVar.Find("hostname")!.StringValue;
+            string url = $"http://api.tgpro.top/dbapi/scrim_checkaccess.php?steamid={steamId}&hostname={Uri.EscapeDataString(hostname)}";
+            Log($"[CheckDBAccess] URL: {url}");
+            using HttpClient client = new HttpClient();
+            try
+            {
+                var response = await client.GetStringAsync(url);
+                var jsonResponse = JsonSerializer.Deserialize<Dictionary<string, object>>(response);
+
+                if (jsonResponse != null && jsonResponse.ContainsKey("HasAccess") && jsonResponse["HasAccess"].ToString() == "1")
+                {
+                    if (!loadedAdmins.ContainsKey(steamId))
+                    {
+                        loadedAdmins.Add(steamId, "");
+                        Log("[CheckDBAccess] Admin added to loadedAdmins");
+                        Log("[ChcekDBAccess] now loadedAdmins: ");
+                        foreach (var kvp in loadedAdmins)
+                        {
+                            Log($"[ADMIN] Username: {kvp.Key}, Role: {kvp.Value}");
+                        }
+                    }
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+
+            }
+            catch (Exception e)
+            {
+                Log($"Error in HTTP request: {e.Message}");
+                return false;
             }
         }
 

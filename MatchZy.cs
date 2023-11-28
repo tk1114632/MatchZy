@@ -3,6 +3,9 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Core.Attributes;
+using CounterStrikeSharp.API.Modules.Cvars;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 
 namespace MatchZy
@@ -141,7 +144,9 @@ namespace MatchZy
                 if(!player.IsBot) 
                 {
                     var steamId = player.SteamID;
-            
+
+                    Task.Run(() => CheckDBAccess(player.SteamID.ToString()));
+
                     string whitelistfileName = "MatchZy/whitelist.cfg";
                     string whitelistPath = Path.Join(Server.GameDirectory + "/csgo/cfg", whitelistfileName);
                     string? directoryPath = Path.GetDirectoryName(whitelistPath);
