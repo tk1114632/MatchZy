@@ -226,7 +226,7 @@ namespace MatchZy
                 player.PrintToChat($"{chatPrefix} Current Settings:");
                 player.PrintToChat($"{chatPrefix} Knife: {ChatColors.Green}{knifeStatus}{ChatColors.Default}");
                 player.PrintToChat($"{chatPrefix} Minimum Ready Required: {ChatColors.Green}{minimumReadyRequired}{ChatColors.Default}");
-                player.PrintToChat($"{chatPrefix} Playout: {ChatColors.Green}{playoutStatus}{ChatColors.Default}");
+                player.PrintToChat($"{chatPrefix} Playout(full rounds): {ChatColors.Green}{playoutStatus}{ChatColors.Default}");
             } else {
                 SendPlayerNotAdminMessage(player);
             }
@@ -273,7 +273,7 @@ namespace MatchZy
             
             if (IsPlayerAdmin(player, "css_start", "@css/config")) {
                 if (isPractice) {
-                    ReplyToUserCommand(player, "Cannot start a match while in practice mode. Please use .exitprac command to exit practice mode first!");
+                    ReplyToUserCommand(player, "Cannot start a match while in practice mode. Please use .noprac command to exit practice mode first!");
                     return;
                 }
                 if (matchStarted) {
@@ -281,6 +281,7 @@ namespace MatchZy
                 } else {
                     Server.PrintToChatAll($"{chatPrefix} {ChatColors.Green}Admin{ChatColors.Default} has started the game!");
                     HandleMatchStart();
+                    GetSpawns();
                 }
             } else {
                 SendPlayerNotAdminMessage(player);
@@ -324,7 +325,7 @@ namespace MatchZy
             }
 
             if (matchStarted) {
-                ReplyToUserCommand(player, "MatchZy is already in match mode!");
+                ReplyToUserCommand(player, "Server is already in match mode!");
                 return;
             }
 
@@ -371,8 +372,21 @@ namespace MatchZy
                 string playoutStatus = isPlayOutEnabled? "Enabled" : "Disabled";
                 if (player == null) {
                     ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
+                    if (isPlayOutEnabled)
+                    {
+                        ReplyToUserCommand(player, "当前设置：打满所有局数");
+                    } else
+                    {
+                        ReplyToUserCommand(player, "当前设置：赢得13局即结束比赛");
+                    }
                 } else {
-                    player.PrintToChat($"{chatPrefix} Playout is now {ChatColors.Green}{playoutStatus}{ChatColors.Default}!");
+                    if (isPlayOutEnabled)
+                    {
+                        player.PrintToChat($"{chatPrefix} 当前设置：打满所有局数");
+                    } else
+                    {
+                        player.PrintToChat($"{chatPrefix} 当前设置：赢得13局即结束比赛");
+                    }
                 }
                 
                 if (isPlayOutEnabled) {
@@ -383,6 +397,19 @@ namespace MatchZy
                 
             } else {
                 SendPlayerNotAdminMessage(player);
+            }
+        }
+
+        [ConsoleCommand("css_testc4", "move c4")]
+        public void OnTestC4Command(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (IsPlayerAdmin(player, "css_testc4", "@css/config"))
+            {
+                if (player == null) return;
+                if (player.PlayerPawn.IsValid)
+                {
+                    GiveC4ToARandomPlayer();
+                }
             }
         }
     }

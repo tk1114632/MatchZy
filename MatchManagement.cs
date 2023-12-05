@@ -15,10 +15,10 @@ namespace MatchZy
     {
 
         public Team matchzyTeam1 = new() {
-            teamName = "Counter-Terrorist"
+            teamName = "Team CT"
         };
         public Team matchzyTeam2 = new() {
-            teamName = "Terrorist"
+            teamName = "Team T"
         };
 
         public Dictionary<Team, string> teamSides = new();
@@ -52,12 +52,12 @@ namespace MatchZy
                 matchzyTeam1.teamName = teamName;
                 teamSides[matchzyTeam1] = "CT";
                 reverseTeamSides["CT"] = matchzyTeam1;
-                if (matchzyTeam1.coach != null) matchzyTeam1.coach.Clan = $"[{matchzyTeam1.teamName} COACH]";
+                if (matchzyTeam1.coach != null) matchzyTeam1.coach.Clan = $"[ COACH ]";
             } else if (teamNum == 2) {
                 matchzyTeam2.teamName = teamName;
                 teamSides[matchzyTeam2] = "TERRORIST";
                 reverseTeamSides["TERRORIST"] = matchzyTeam2;
-                if (matchzyTeam2.coach != null) matchzyTeam2.coach.Clan = $"[{matchzyTeam2.teamName} COACH]";
+                if (matchzyTeam2.coach != null) matchzyTeam2.coach.Clan = $"[ COACH ]";
             }
             Server.ExecuteCommand($"mp_teamname_{teamNum} {teamName};");
         }

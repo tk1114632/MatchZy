@@ -11,6 +11,7 @@ namespace MatchZy
 
         private void InitPlayerDamageInfo()
         {
+			return;
             foreach (var key in playerData.Keys) {
                 if (playerData[key].IsBot) continue;
                 int attackerId = key;
@@ -42,6 +43,7 @@ namespace MatchZy
 		public Dictionary<int, Dictionary<int, DamagePlayerInfo>> playerDamageInfo = new Dictionary<int, Dictionary<int, DamagePlayerInfo>>();
 		private void UpdatePlayerDamageInfo(EventPlayerHurt @event, int targetId)
 		{
+			return;
 			int attackerId = (int)@event.Attacker.UserId!;
 			if (!playerDamageInfo.TryGetValue(attackerId, out var attackerInfo))
 				playerDamageInfo[attackerId] = attackerInfo = new Dictionary<int, DamagePlayerInfo>();
@@ -55,6 +57,7 @@ namespace MatchZy
 
         private void ShowDamageInfo()
 		{
+			return;
 			HashSet<(int, int)> processedPairs = new HashSet<(int, int)>();
 
 			foreach (var entry in playerDamageInfo)

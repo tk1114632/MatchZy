@@ -23,6 +23,8 @@ namespace MatchZy
         DatabaseConfig config;
         public DatabaseType databaseType { get; set; }
 
+        public string connectionStringGlobal = "";
+
         public void InitializeDatabase(string directory)
         {
             try
@@ -38,7 +40,8 @@ namespace MatchZy
                 else if (databaseType == DatabaseType.MySQL)
                 {
                     string connectionString = $"Server={config.MySqlHost};Port={config.MySqlPort};Database={config.MySqlDatabase};User Id={config.MySqlUsername};Password={config.MySqlPassword};";
-                    connection = new MySqlConnection(connectionString);           
+                    connection = new MySqlConnection(connectionString);
+                    connectionStringGlobal = connectionString;
                 }
                 else
                 {
@@ -71,7 +74,8 @@ namespace MatchZy
                             team1_score INTEGER NOT NULL DEFAULT 0,
                             team2_name TEXT NOT NULL DEFAULT '',
                             team2_score INTEGER NOT NULL DEFAULT 0,
-                            server_ip TEXT NOT NULL DEFAULT '0'
+                            server_ip TEXT NOT NULL DEFAULT '0',
+                            server_name TEXT NOT NULL DEFAULT 'TBD'
                         )");
                     connection.Execute(@"
                         CREATE TABLE IF NOT EXISTS matchzy_player_stats (
@@ -125,7 +129,8 @@ namespace MatchZy
                             team1_score INT NOT NULL DEFAULT 0,
                             team2_name VARCHAR(255) NOT NULL DEFAULT '',
                             team2_score INT NOT NULL DEFAULT 0,
-                            server_ip VARCHAR(255) NOT NULL DEFAULT '0'
+                            server_ip VARCHAR(255) NOT NULL DEFAULT '0',
+                            server_name VARCHAR(30)
                         )");
 
                     connection.Execute($@"
@@ -179,17 +184,18 @@ namespace MatchZy
             }
         }
 
-        public long InitMatch(string team1name, string team2name, string serverIp)
+        public long InitMatch(string team1name, string team2name, string serverIp, string serverName)
         {
+            if (serverName == null) serverName = "Unknown";
             try
             {
                 string mapName = Server.MapName;
                 string dateTimeExpression = (connection is SqliteConnection) ? "datetime('now')" : "NOW()";
 
                 connection.Execute(@"
-                    INSERT INTO matchzy_match_data (start_time, map_name, team1_name, team2_name, server_ip)
-                    VALUES (" + dateTimeExpression + ", @mapName, @team1name, @team2name, @serverIp)",
-                    new { mapName, team1name, team2name, serverIp });
+                    INSERT INTO matchzy_match_data (start_time, map_name, team1_name, team2_name, server_ip, server_name)
+                    VALUES (" + dateTimeExpression + ", @mapName, @team1name, @team2name, @serverIp, @serverName)",
+                    new { mapName, team1name, team2name, serverIp, serverName });
 
                 // Retrieve the last inserted match_id
                 long matchId = -1;
@@ -240,7 +246,12 @@ namespace MatchZy
                     SET winner = @winnerName, end_time = {dateTimeExpression}, team1_score = @t1score, team2_score = @t2score
                     WHERE matchid = @matchId";
 
-                connection.Execute(sqlQuery, new { matchId, winnerName, t1score, t2score });
+                //use localconnection to SetMatchEndData
+                using (var localConnection = new MySqlConnection(connectionStringGlobal))
+                {
+                    localConnection.Open();
+                    localConnection.Execute(sqlQuery, new { matchId, winnerName, t1score, t2score });
+                }
 
                 Log($"[SetMatchEndData] Data updated for matchId: {matchId} winnerName: {winnerName}");
             }
@@ -259,11 +270,15 @@ namespace MatchZy
                     SET team1_score = @t1score, team2_score = @t2score
                     WHERE matchid = @matchId";
 
-                connection.Execute(sqlQuery, new { matchId, t1score, t2score });
+                using (var localConnection = new MySqlConnection(connectionStringGlobal))
+                {
+                    localConnection.Open();
+                    localConnection.Execute(sqlQuery, new { matchId, t1score, t2score });
+                }
             }
             catch (Exception ex)
             {
-                Log($"[UpdatePlayerStats - FATAL] Error updating data of matchId: {matchId} [ERROR]: {ex.Message}");
+                Log($"[UpdateMatchStats - FATAL] Error updating data of matchId: {matchId} [ERROR]: {ex.Message}");
             }
         }
 
@@ -354,7 +369,11 @@ namespace MatchZy
                             @head_shot_kills, @cash_earned, @enemies_flashed)";
                     }
 
-                    connection.Execute(sqlQuery,
+                    using (var localConnection = new MySqlConnection(connectionStringGlobal))
+                    {
+                        localConnection.Open();
+                        // Perform operations with localConnection
+                        localConnection.Execute(sqlQuery,
                         new
                         {
                             matchId,
@@ -393,6 +412,7 @@ namespace MatchZy
                             cash_earned = playerStats.CashEarned,
                             enemies_flashed = playerStats.EnemiesFlashed
                         });
+                    }
 
                     Log($"[UpdatePlayerStats] Data inserted/updated for player {steamid64} in match {matchId}");
                 }

@@ -5,6 +5,7 @@ using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Timers;
 using System.Text.Json;
+using CounterStrikeSharp.API.Modules.Cvars;
 
 
 namespace MatchZy
@@ -23,7 +24,13 @@ namespace MatchZy
         };
 
         public void SetupRoundBackupFile() {
-            string backupFilePrefix  = $"matchzy_{liveMatchId}";
+            if (hostname == "" || hostname == null)
+            {
+                hostname = ConVar.Find("hostname")?.StringValue;
+            }
+            string hostname_nospace = hostname==null ? "default" : hostname.Replace(" ", "");
+            string backupFilePrefix  = "backup_" + hostname_nospace;
+            //string backupFilePrefix  = $"matchzy_{liveMatchId}";
             Server.ExecuteCommand($"mp_backup_round_file {backupFilePrefix}");
         }
         [ConsoleCommand("css_stop", "Marks the player ready")]
@@ -89,7 +96,8 @@ namespace MatchZy
             if (!string.IsNullOrWhiteSpace(commandArg)) {
                 if (int.TryParse(commandArg, out int roundNumber) && roundNumber >= 0) {
                     string round = roundNumber.ToString("D2");
-                    string requiredBackupFileName = $"matchzy_{liveMatchId}_round{round}.txt";
+                    string backroundfilename = ConVar.Find("mp_backup_round_file")?.StringValue;
+                    string requiredBackupFileName = $"{backroundfilename}_round{round}.txt";
                     RestoreRoundBackup(player, requiredBackupFileName, round);
                 }
                 else {

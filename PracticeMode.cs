@@ -2,6 +2,8 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Entities.Constants;
+using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Memory;
@@ -12,6 +14,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Net.Mime;
+using System.Text.Json.Serialization;
 
 
 
@@ -37,10 +40,17 @@ namespace MatchZy
             { (byte)CsTeam.Terrorist, new List<Position>() }
         };
 
+        public Dictionary<byte, List<Position>> spawnsDataCoach = new Dictionary<byte, List<Position>> {
+            { (byte)CsTeam.CounterTerrorist, new List<Position>() },
+            { (byte)CsTeam.Terrorist, new List<Position>() }
+        };
+
         public const string practiceCfgPath = "MatchZy/prac.cfg";
 
         // This map stores the bots which are being used in prac (probably spawned using .bot). Key is the userid of the bot.
         public Dictionary<int, Dictionary<string, object>> pracUsedBots = new Dictionary<int, Dictionary<string, object>>();
+
+        public bool isSpawningBot;
 
         public void StartPracticeMode()
         {
@@ -61,15 +71,68 @@ namespace MatchZy
                 Log($"[StartWarmup] Starting Practice Mode! Practice CFG not found in {absolutePath}, using default CFG!");
                 Server.ExecuteCommand("""sv_cheats "true"; mp_force_pick_time "0"; bot_quota "0"; sv_showimpacts "1"; mp_limitteams "0"; sv_deadtalk "true"; sv_full_alltalk "true"; sv_ignoregrenaderadio "false"; mp_forcecamera "0"; sv_grenade_trajectory_prac_pipreview "true"; sv_grenade_trajectory_prac_trailtime "3"; sv_infinite_ammo "1"; weapon_auto_cleanup_time "15"; weapon_max_before_cleanup "30"; mp_buy_anywhere "1"; mp_maxmoney "9999999"; mp_startmoney "9999999";""");
                 Server.ExecuteCommand("""mp_weapons_allow_typecount "-1"; mp_death_drop_breachcharge "false"; mp_death_drop_defuser "false"; mp_death_drop_taser "false"; mp_drop_knife_enable "true"; mp_death_drop_grenade "0"; ammo_grenade_limit_total "5"; mp_defuser_allocation "2"; mp_free_armor "2"; mp_ct_default_grenades "weapon_incgrenade weapon_hegrenade weapon_smokegrenade weapon_flashbang weapon_decoy"; mp_ct_default_primary "weapon_m4a1";""");
-                Server.ExecuteCommand("""mp_t_default_grenades "weapon_molotov weapon_hegrenade weapon_smokegrenade weapon_flashbang weapon_decoy"; mp_t_default_primary "weapon_ak47"; mp_warmup_online_enabled "true"; mp_warmup_pausetimer "1"; mp_warmup_start; bot_quota_mode fill; mp_solid_teammates 2; mp_autoteambalance false; mp_teammates_are_enemies true;""");
+                Server.ExecuteCommand("""mp_t_default_grenades "weapon_molotov weapon_hegrenade weapon_smokegrenade weapon_flashbang weapon_decoy"; mp_t_default_primary "weapon_ak47"; mp_warmup_online_enabled "true"; mp_warmup_pausetimer "1"; mp_warmup_start; bot_quota_mode fill; mp_solid_teammates 2; mp_autoteambalance false; mp_teammates_are_enemies false;""");
             }
             GetSpawns();
-            Server.PrintToChatAll($"{chatPrefix} Practice mode loaded!");
-            Server.PrintToChatAll($"{chatPrefix} Available commands:");
-	        Server.PrintToChatAll($"{chatPrefix} \x10.spawn, .ctspawn, .tspawn, .bot, .nobots, .exitprac");
-	        Server.PrintToChatAll($"{chatPrefix} \x10.loadnade <name>, .savenade <name>, .importnade <code> .listnades <optional filter>");
+            Server.PrintToChatAll($"{chatPrefix} Prac mode loaded!");
+            Server.PrintToChatAll($"{chatPrefix} Available commands (可用指令):");
+	        Server.PrintToChatAll($"{chatPrefix} \x10.spawn .ctspawn .tspawn .bot .nobots .dry .noprac");
+	        //Server.PrintToChatAll($"{chatPrefix} \x10.loadnade <name>, .savenade <name>, .importnade <code> .listnades <optional filter>");
+        }
+        public class CustomSpawnPoint
+        {
+            [JsonPropertyName("map")]
+            public string? Map { get; set; }
+            [JsonPropertyName("team")]
+            public CsTeam Team { get; set; }
+            [JsonPropertyName("origin")]
+            public string? Origin { get; set; }
+            [JsonPropertyName("angle")]
+            public string? Angle { get; set; }
         }
 
+        public List<CustomSpawnPoint> _coachSpawnPoints = new()!;
+        public Dictionary<byte, Position> theCoachSpawn = new()!;
+
+        public void LoadCoachSpawns()
+        {
+            _coachSpawnPoints.Clear();
+            /*spawnsDataCoach = new Dictionary<byte, List<Position>> {
+                        { (byte)CsTeam.CounterTerrorist, new List<Position>() },
+                        { (byte)CsTeam.Terrorist, new List<Position>() }
+                    };*/
+            theCoachSpawn.Clear();
+            var absolutePath = Path.Join(Server.GameDirectory + "/csgo/cfg", "MatchZy/coachspawns.json");
+            if (File.Exists(absolutePath))
+            {
+                var jsonString = File.ReadAllText(absolutePath);
+                var mapName = Server.MapName.ToLower();
+                _coachSpawnPoints = JsonSerializer.Deserialize<List<CustomSpawnPoint>>(jsonString);
+
+                if (_coachSpawnPoints != null)
+                {
+                    foreach (var spawn in _coachSpawnPoints)
+                    {
+                        if (spawn.Map == mapName)
+                        {
+                            var origin = spawn.Origin?.Split(' ');
+                            var angle = spawn.Angle?.Split(' ');
+                            if (origin != null && angle != null)
+                            {
+                                var position = new Position(new Vector(float.Parse(origin[0]), float.Parse(origin[1]), float.Parse(origin[2])), new QAngle(float.Parse(angle[0]), float.Parse(angle[1]), float.Parse(angle[2])));
+                                //spawnsDataCoach[(byte)spawn.Team].Add(position);
+                                Log("Coach (Team " + spawn.Team.ToString() + ") spawn added: " + position.PlayerPosition.X + " " + position.PlayerPosition.Y + " " + position.PlayerPosition.Z);
+                                theCoachSpawn[(byte)spawn.Team] = position;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Log($"[LoadCoachSpawns] coachspawns.json not found in {absolutePath}");
+            }
+        }
         public void GetSpawns()
         {
             // Resetting spawn data to avoid any glitches
@@ -77,12 +140,17 @@ namespace MatchZy
                         { (byte)CsTeam.CounterTerrorist, new List<Position>() },
                         { (byte)CsTeam.Terrorist, new List<Position>() }
                     };
+            /*spawnsDataCoach = new Dictionary<byte, List<Position>> {
+                        { (byte)CsTeam.CounterTerrorist, new List<Position>() },
+                        { (byte)CsTeam.Terrorist, new List<Position>() }
+                    };*/
 
             int minPriority = 1;
 
             var spawnsct = Utilities.FindAllEntitiesByDesignerName<SpawnPoint>("info_player_counterterrorist");
             foreach (var spawn in spawnsct)
             {
+                Log($"CT spawns: Spawn priority: {spawn.Priority}; IsValid: {spawn.Enabled}");
                 if (spawn.IsValid && spawn.Enabled && spawn.Priority < minPriority)
                 {
                     minPriority = spawn.Priority;
@@ -95,16 +163,30 @@ namespace MatchZy
                 {
                     spawnsData[(byte)CsTeam.CounterTerrorist].Add(new Position(spawn.CBodyComponent?.SceneNode?.AbsOrigin, spawn.CBodyComponent?.SceneNode?.AbsRotation));
                 }
+                /*else if (spawn.IsValid && spawn.Enabled && spawn.Priority > minPriority)
+                    {
+                    spawnsDataCoach[(byte)CsTeam.CounterTerrorist].Add(new Position(spawn.CBodyComponent?.SceneNode?.AbsOrigin, spawn.CBodyComponent?.SceneNode?.AbsRotation));
+                    Log($"CT Coach spawn added: {spawn.CBodyComponent?.SceneNode?.AbsOrigin.X} {spawn.CBodyComponent?.SceneNode?.AbsOrigin.Y} {spawn.CBodyComponent?.SceneNode?.AbsOrigin.Z}");
+
+                }*/
             }
 
             var spawnst = Utilities.FindAllEntitiesByDesignerName<SpawnPoint>("info_player_terrorist");
             foreach (var spawn in spawnst)
             {
+                Log($"T spawns: Spawn priority: {spawn.Priority}; IsValid: {spawn.Enabled}");
                 if (spawn.IsValid && spawn.Enabled && spawn.Priority == minPriority)
                 {
                     spawnsData[(byte)CsTeam.Terrorist].Add(new Position(spawn.CBodyComponent?.SceneNode?.AbsOrigin, spawn.CBodyComponent?.SceneNode?.AbsRotation));
                 }
+                /*else if (spawn.IsValid && spawn.Enabled && spawn.Priority > minPriority)
+                {
+                    spawnsDataCoach[(byte)CsTeam.Terrorist].Add(new Position(spawn.CBodyComponent?.SceneNode?.AbsOrigin, spawn.CBodyComponent?.SceneNode?.AbsRotation));
+                    Log($"T Coach spawn added: {spawn.CBodyComponent?.SceneNode?.AbsOrigin.X} {spawn.CBodyComponent?.SceneNode?.AbsOrigin.Y} {spawn.CBodyComponent?.SceneNode?.AbsOrigin.Z}");
+                }*/
             }
+
+            LoadCoachSpawns();
         }
 
         private void HandleSpawnCommand(CCSPlayerController? player, string commandArg, byte teamNum, string command)
@@ -479,22 +561,22 @@ namespace MatchZy
                                 switch (lineupInfo["Type"])
                                 {
                                     case "Flash":
-                                        NativeAPI.IssueClientCommand((int)player.EntityIndex!.Value.Value - 1, "slot7");
+                                        NativeAPI.IssueClientCommand((int)player.Index! - 1, "slot7");
                                         break;
                                     case "Smoke":
-                                        NativeAPI.IssueClientCommand((int)player.EntityIndex!.Value.Value - 1, "slot8");
+                                        NativeAPI.IssueClientCommand((int)player.Index! - 1, "slot8");
                                         break;
                                     case "HE":
-                                        NativeAPI.IssueClientCommand((int)player.EntityIndex!.Value.Value - 1, "slot6");
+                                        NativeAPI.IssueClientCommand((int)player.Index! - 1, "slot6");
                                         break;
                                     case "Decoy":
-                                        NativeAPI.IssueClientCommand((int)player.EntityIndex!.Value.Value - 1, "slot9");
+                                        NativeAPI.IssueClientCommand((int)player.Index! - 1, "slot9");
                                         break;
                                     case "Molly":
-                                        NativeAPI.IssueClientCommand((int)player.EntityIndex!.Value.Value - 1, "slot10");
+                                        NativeAPI.IssueClientCommand((int)player.Index! - 1, "slot10");
                                         break;
                                     case "":
-                                        NativeAPI.IssueClientCommand((int)player.EntityIndex!.Value.Value - 1, "slot8");
+                                        NativeAPI.IssueClientCommand((int)player.Index! - 1, "slot8");
                                         break;
                                 }
 
@@ -570,16 +652,66 @@ namespace MatchZy
             if (matchStarted)
             {
                 ReplyToUserCommand(player, "Practice Mode cannot be started when a match has been started!");
+                ReplyToUserCommand(player, "比赛已开始，无法进入Prac模式；请先输入 .endmatch 退出比赛");
                 return;
             }
 	    
 			if (isPractice)
-				{
-					StartMatchMode();
-					return;
-				}
+			{
+                //StartMatchMode();
+                ReplyToUserCommand(player, "Practice Mode is already ON, use .noprac/.setup to start match mode!");
+                ReplyToUserCommand(player, "已处于Prac模式，输入 .noprac/.setup 退出Prac模式");
+                return;
+			}
 	
-				StartPracticeMode();
+			StartPracticeMode();
+        }
+
+        [ConsoleCommand("css_dry", "Starts practice mode")]
+        public void OnDryCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (matchStarted)
+            {
+                ReplyToUserCommand(player, "Dry run is disabled when a match has been started!");
+                ReplyToUserCommand(player, "比赛模式下不能 .dry 跑图");
+                return;
+            }
+
+            if (isPractice)
+            {
+                DryrunOnce();
+                Server.PrintToChatAll($"{chatPrefix} Restarting round with freezetime; use .undry to go back to Prac Mode!");
+                Server.PrintToChatAll($"{chatPrefix} 正在 .dry 刷新（冻结时间、购买限制）; 输入 .undry 返回Prac模式");
+            }
+            else
+            {
+                ReplyToUserCommand(player, "Dry run is only available in Prac Mode!");
+                ReplyToUserCommand(player, "只能在Prac模式下使用 .dry 命令");
+            }
+            return;
+        }
+
+        [ConsoleCommand("css_undry", "Starts practice mode")]
+        public void OnUnDryCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (matchStarted)
+            {
+                ReplyToUserCommand(player, "Dry run is disabled when a match has been started!");
+                return;
+            }
+
+            if (isPractice)
+            {
+                ExitDryrun();
+                Server.PrintToChatAll($"{chatPrefix} Exiting Dry Run; No limits to buy nades.");
+                Server.PrintToChatAll($"{chatPrefix} 退出 .dry 回到Prac模式");
+            }
+            else
+            {
+                ReplyToUserCommand(player, "Dry run is only available in Prac Mode!");
+                ReplyToUserCommand(player, "只能在Prac模式下使用 .undry 命令");
+            }
+            return;
         }
 
         [ConsoleCommand("css_spawn", "Teleport to provided spawn")]
@@ -646,16 +778,19 @@ namespace MatchZy
             // Checking if any of the Position List is empty
             if (spawnsData.Values.Any(list => list.Count == 0)) GetSpawns();
 
+            isSpawningBot = true;
+
             // !bot/.bot command is made using a lot of workarounds, as there is no direct way to create a bot entity and spawn it in CSSharp
             // Hence there can be some issues with this approach. This will be revamped when we will be able to create entities and manipulate them.
-            if (player.TeamNum == 2)
+            if (player.TeamNum == (byte)CsTeam.CounterTerrorist)
             {
-                Server.ExecuteCommand("bot_join_team T");
+                //Server.ExecuteCommand("bot_join_team T");
                 Server.ExecuteCommand("bot_add_t");
+                Utilities.CreateEntityByName<CCSPlayerController>("bot");
             }
-            else if (player.TeamNum == 3)
+            else if (player.TeamNum == (byte)CsTeam.Terrorist)
             {
-                Server.ExecuteCommand("bot_join_team CT");
+                //Server.ExecuteCommand("bot_join_team CT");
                 Server.ExecuteCommand("bot_add_ct");
             }
             
@@ -687,10 +822,8 @@ namespace MatchZy
                     {
                         continue;
                     }
-                    else
-                    {
-                        pracUsedBots[tempPlayer.UserId.Value] = new Dictionary<string, object>();
-                    }
+                    pracUsedBots[tempPlayer.UserId.Value] = new Dictionary<string, object>();
+                    Log($"Adding bot {tempPlayer.PlayerName} to pracUsedBots");
 
                     Position botOwnerPosition = new Position(botOwner.PlayerPawn.Value.CBodyComponent?.SceneNode?.AbsOrigin, botOwner.PlayerPawn.Value.CBodyComponent?.SceneNode?.AbsRotation);
                     // Add key-value pairs to the inner dictionary
@@ -699,13 +832,70 @@ namespace MatchZy
                     pracUsedBots[tempPlayer.UserId.Value]["owner"] = botOwner;
 
                     tempPlayer.PlayerPawn.Value.Teleport(botOwnerPosition.PlayerPosition, botOwnerPosition.PlayerAngle, new Vector(0, 0, 0));
+                    TemporarilyDisableCollisions(botOwner, tempPlayer);
                     unusedBotFound = true;
                 }
             }
             if (!unusedBotFound) {
-                Server.PrintToChatAll($"{chatPrefix} Cannot add bots, the team is full! Use .nobots to remove the current bots.");
+                Server.PrintToChatAll($"{chatPrefix} Cannot add bots. Type .nobots and switch team, and then re-try .bot");
+                Server.PrintToChatAll($"{chatPrefix} 无法添加Bot. 先输入 .nobots 清除Bot，然后更换阵营，再输入.bot");
             }
+
+            isSpawningBot = false;
         }
+        private CounterStrikeSharp.API.Modules.Timers.Timer? timer;
+        public void TemporarilyDisableCollisions(CCSPlayerController p1, CCSPlayerController p2)
+        {
+
+
+            // Reference collision code: https://github.com/Source2ZE/CS2Fixes/blob/f009e399ff23a81915e5a2b2afda20da2ba93ada/src/events.cpp#L150
+            Log($"wobby state: {p1.PlayerPawn.Value.Collision.CollisionGroup}");
+            p1.PlayerPawn.Value.Collision.CollisionAttribute.CollisionGroup = (byte)CollisionGroup.COLLISION_GROUP_DEBRIS;
+            p1.PlayerPawn.Value.Collision.CollisionGroup = (byte)CollisionGroup.COLLISION_GROUP_DEBRIS;
+            p2.PlayerPawn.Value.Collision.CollisionAttribute.CollisionGroup = (byte)CollisionGroup.COLLISION_GROUP_DEBRIS;
+            p2.PlayerPawn.Value.Collision.CollisionGroup = (byte)CollisionGroup.COLLISION_GROUP_DEBRIS;
+            // TODO: call CollisionRulesChanged
+            var p1p = p1.PlayerPawn;
+            var p2p = p2.PlayerPawn;
+            timer?.Kill();
+            timer = AddTimer(0.1f, () =>
+            {
+                if (!p1p.IsValid || !p2p.IsValid || !p1p.Value.IsValid || !p2p.Value.IsValid)
+                {
+                    Log($"player handle invalid p1p {p1p.Value.IsValid} p2p {p2p.Value.IsValid}");
+                    timer?.Kill();
+                    return;
+                }
+                if (!DoPlayersCollide(p1p.Value, p2p.Value))
+                {
+                    // Once they no longer collide 
+                    p1p.Value.Collision.CollisionAttribute.CollisionGroup = (byte)CollisionGroup.COLLISION_GROUP_PLAYER_MOVEMENT;
+                    p1p.Value.Collision.CollisionGroup = (byte)CollisionGroup.COLLISION_GROUP_PLAYER_MOVEMENT;
+                    p2p.Value.Collision.CollisionAttribute.CollisionGroup = (byte)CollisionGroup.COLLISION_GROUP_PLAYER_MOVEMENT;
+                    p2p.Value.Collision.CollisionGroup = (byte)CollisionGroup.COLLISION_GROUP_PLAYER_MOVEMENT;
+                    // TODO: call CollisionRulesChanged
+                    timer?.Kill();
+                }
+            }, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
+        }
+
+        public bool DoPlayersCollide(CCSPlayerPawn p1, CCSPlayerPawn p2)
+        {
+            Vector p1min, p1max, p2min, p2max;
+            var p1pos = p1.AbsOrigin;
+            var p2pos = p2.AbsOrigin;
+            p1min = p1.Collision.Mins + p1pos!;
+            p1max = p1.Collision.Maxs + p1pos!;
+            p2min = p2.Collision.Mins + p2pos!;
+            p2max = p2.Collision.Maxs + p2pos!;
+            /* Log($"p1 ({p1min}, {p1max}), p2 ({p2min}, {p2max})"); */
+
+            return p1min.X <= p2max.X && p1max.X >= p2min.X &&
+                    p1min.Y <= p2max.Y && p1max.Y >= p2min.Y &&
+                    p1min.Z <= p2max.Z && p1max.Z >= p2min.Z;
+        }
+
+
 
         [GameEventHandler]
         public HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
@@ -721,6 +911,18 @@ namespace MatchZy
                     {
                         player.PlayerPawn.Value.Teleport(botPosition.PlayerPosition, botPosition.PlayerAngle, new Vector(0, 0, 0));
                     }
+                }
+                else if (!isSpawningBot && !player.IsHLTV)
+                {
+                    // Bot has been spawned, but we didn't spawn it, so kick it.
+                    // This most often happens when a player changes team with bot_quota_mode set to fill
+                    // Extra bots from bot_add are already handled in SpawnBot
+                    // Delay this for a few seconds to prevent crashes
+                    Log($"Kicking bot {player.PlayerName} due to erroneous spawning");
+                    AddTimer(2.5f, () =>
+                    {
+                        Server.ExecuteCommand($"bot_kick {player.PlayerName}");
+                    });
                 }
             }
 

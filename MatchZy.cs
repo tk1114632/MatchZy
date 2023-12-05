@@ -6,6 +6,7 @@ using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Modules.Cvars;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 
 namespace MatchZy
@@ -116,8 +117,14 @@ namespace MatchZy
                 { ".tac", OnTacCommand },
                 { ".knife", OnKifeCommand },
                 { ".playout", OnPlayoutCommand },
+                { ".24r", OnPlayoutCommand },
+                { ".13r", OnPlayoutCommand },
                 { ".start", OnStartCommand },
+                { ".r3", OnStartCommand },
+                { ".forcestart", OnStartCommand },
+                { ".fs", OnStartCommand },
                 { ".restart", OnRestartMatchCommand },
+                { ".endmatch", OnRestartMatchCommand},
                 { ".reloadmap", OnMapReloadCommand },
                 { ".settings", OnMatchSettingsCommand },
                 { ".whitelist", OnWLCommand },
@@ -130,10 +137,15 @@ namespace MatchZy
                 { ".fastforward", OnFastForwardCommand },
                 { ".clear", OnClearCommand },
                 { ".match", OnMatchCommand },
+                { ".setup", OnMatchCommand },
                 { ".uncoach", OnUnCoachCommand },
                 { ".exitprac", OnMatchCommand },
+                { ".noprac", OnMatchCommand },
                 { ".stop", OnStopCommand },
-                { ".help", OnHelpCommand }
+                { ".help", OnHelpCommand },
+                { ".dry", OnDryCommand },
+                { ".undry", OnUnDryCommand },
+                { ".testc4", OnTestC4Command }
             };
 
             RegisterEventHandler<EventPlayerConnectFull>((@event, info) => {
@@ -279,7 +291,7 @@ namespace MatchZy
                 return HookResult.Continue;
             }, HookMode.Pre);
 
-           RegisterEventHandler<EventRoundEnd>((@event, info) => {
+            RegisterEventHandler<EventRoundEnd>((@event, info) => {
                 Log($"[EventRoundEnd POST] Winner: {@event.Winner}, Reason: {@event.Reason}");
                 HandlePostRoundEndEvent(@event);
                 return HookResult.Continue;
@@ -332,7 +344,7 @@ namespace MatchZy
                     {
                         int targetId = (int)@event.Userid.UserId!;
 
-                        UpdatePlayerDamageInfo(@event, targetId);
+                        //UpdatePlayerDamageInfo(@event, targetId);
                     }
                 }
 
