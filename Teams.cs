@@ -47,8 +47,8 @@ namespace MatchZy
         {
             if (player == null || !player.PlayerPawn.IsValid) return;
             if (isPractice) {
-                ReplyToUserCommand(player, "Uncoach is only available in warmup period of match mode!");
-                ReplyToUserCommand(player, ".uncoach 只能在比赛模式的热身阶段使用");
+                ReplyToUserCommand(player, "Uncoach is only available in match mode!");
+                ReplyToUserCommand(player, ".uncoach 只能在比赛模式使用");
                 return;
             }
 
@@ -187,11 +187,15 @@ namespace MatchZy
                 MoveCoach(coach);
                 RemoveCoachWeaponsAndDropC4(coach);
             }*/
-
+            bool TCoachExists = false;
+            bool C4FoundOnCoach = false;
             foreach (var coach in coachPlayers)
             {
-                if (coach == null) continue;
-                Log($"Found coach: {coach.player.PlayerName}");
+                if (coach == null || !coach.player.IsValid) continue;
+                //Log($"Found coach: {coach.player.PlayerName}");
+                if(coach.team == CsTeam.Terrorist) {
+                    TCoachExists = true;
+                }
                 coach.player.InGameMoneyServices!.Account = 0;
                 AddTimer(0.5f, () => HandleCoachTeamNew(coach.player, coach.team, true));
                 coach.player.ActionTrackingServices!.MatchStats.Kills = 0;
@@ -200,10 +204,21 @@ namespace MatchZy
                 coach.player.ActionTrackingServices!.MatchStats.Damage = 0;
 
                 MoveCoachNew(coach.player, coach.team);
-                RemoveCoachWeaponsAndDropC4(coach.player);
+                
+                try
+                {
+                    C4FoundOnCoach |= RemoveCoachWeaponsAndDropC4(coach.player);
+                }
+                catch (Exception ex)
+                {
+                    Log("Handle coaches in coachplayers loop e:" + ex.Message);
+                }     
                 
             }
-            GiveC4ToARandomPlayer();
+            if(TCoachExists && C4FoundOnCoach)
+            {
+                GiveC4ToARandomPlayer();
+            }
         }
         // Todo: Organize Teams code which can be later used for setting up matches
     }

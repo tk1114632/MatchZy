@@ -71,12 +71,14 @@ namespace MatchZy
 
         public bool isPlayOutEnabled = false;
 
+        public bool isDemoRecord = false;
+
         // User command - action map
         public Dictionary<string, Action<CCSPlayerController?, CommandInfo?>>? commandActions;
 
         // SQLite Database 
         private Database database;
-    
+
         public override void Load(bool hotReload) {
             
             LoadAdmins();
@@ -117,6 +119,8 @@ namespace MatchZy
                 { ".tac", OnTacCommand },
                 { ".knife", OnKifeCommand },
                 { ".playout", OnPlayoutCommand },
+                { ".demo", OnDemoCommand },
+                { ".stopdemo", OnStopDemoCommand },
                 { ".24r", OnPlayoutCommand },
                 { ".13r", OnPlayoutCommand },
                 { ".start", OnStartCommand },
@@ -144,6 +148,7 @@ namespace MatchZy
                 { ".stop", OnStopCommand },
                 { ".help", OnHelpCommand },
                 { ".dry", OnDryCommand },
+                { ".rr", OnRRCommand },
                 { ".undry", OnUnDryCommand },
                 { ".testc4", OnTestC4Command }
             };
@@ -153,11 +158,27 @@ namespace MatchZy
                 var player = @event.Userid;
 
                 // Handling whitelisted players
-                if(!player.IsBot) 
+                if (!player.IsBot)
                 {
                     var steamId = player.SteamID;
 
-                    Task.Run(() => CheckDBAccess(player.SteamID.ToString()));
+                    //if hostname is empty string, use hostname = ConVar.Find("hostname")?.StringValue; to get hostname
+                    if (hostname == "" || hostname == null)
+                    {
+                        hostname = ConVar.Find("hostname")?.StringValue;
+                    }
+                    string serverName = hostname;
+                    Task.Run(() => CheckDBAccess(player.SteamID.ToString(), serverName));
+                    Task.Run(() => database.GetServerExpireDateAndKickPlayerIfNeeded(hostname, player));
+                    //Display expieration date
+                    AddTimer(8.0f, () =>
+                    {
+                        if (player != null && player.IsValid && IsPlayerAdmin(player))
+                        {
+                            player.PrintToChat($"{chatPrefix} Server {ChatColors.Olive}{hostname}{ChatColors.Default} expires on {ChatColors.Red}{database.ServerExpireDate}{ChatColors.Default}, contact admin to renew");
+                            player.PrintToChat($"{chatPrefix} 服务器 {ChatColors.Olive}{hostname}{ChatColors.Default} 到期日 {ChatColors.Red}{database.ServerExpireDate}{ChatColors.Default}，如需续租请联系管理员");
+                        }
+                    });
 
                     string whitelistfileName = "MatchZy/whitelist.cfg";
                     string whitelistPath = Path.Join(Server.GameDirectory + "/csgo/cfg", whitelistfileName);
@@ -219,14 +240,20 @@ namespace MatchZy
                     if (playerData.ContainsKey(player.UserId.Value)) {
                         playerData.Remove(player.UserId.Value);
                     }
-                    
-                    if (matchzyTeam1.coach == player) {
+
+                    // Handling coach disconnect
+                    if (coachPlayers.Find(x => x.player == player) != null) {
+                        player.Clan = "";
+                        coachPlayers.Remove(coachPlayers.Find(x => x.player == player));
+                    }
+
+                    /*if (matchzyTeam1.coach == player) {
                         matchzyTeam1.coach = null;
                         player.Clan = "";
                     } else if (matchzyTeam2.coach == player) {
                         matchzyTeam2.coach = null;
                         player.Clan = "";
-                    }
+                    }*/
                 }
 
                 return HookResult.Continue;
@@ -265,7 +292,7 @@ namespace MatchZy
             RegisterEventHandler<EventPlayerTeam>((@event, info) => {
                 CCSPlayerController player = @event.Userid;
 
-                if (matchzyTeam1.coach == player || matchzyTeam2.coach == player) {
+                if (coachPlayers.Find(x => x.player == player) != null) {
                     @event.Silent = true;
                     return HookResult.Changed;
                 }
@@ -344,7 +371,7 @@ namespace MatchZy
                     {
                         int targetId = (int)@event.Userid.UserId!;
 
-                        //UpdatePlayerDamageInfo(@event, targetId);
+                        UpdatePlayerDamageInfo(@event, targetId);
                     }
                 }
 

@@ -11,6 +11,7 @@ using CounterStrikeSharp.API.Modules.Memory;
 using CsvHelper;
 using CsvHelper.Configuration;
 using MySqlConnector;
+using CounterStrikeSharp.API.Modules.Cvars;
 
 
 
@@ -21,6 +22,8 @@ namespace MatchZy
         private IDbConnection connection;
 
         DatabaseConfig config;
+
+        public string ServerExpireDate;
         public DatabaseType databaseType { get; set; }
 
         public string connectionStringGlobal = "";
@@ -192,6 +195,10 @@ namespace MatchZy
                 string mapName = Server.MapName;
                 string dateTimeExpression = (connection is SqliteConnection) ? "datetime('now')" : "NOW()";
 
+
+                connection.Close();
+                connection.Open();
+
                 connection.Execute(@"
                     INSERT INTO matchzy_match_data (start_time, map_name, team1_name, team2_name, server_ip, server_name)
                     VALUES (" + dateTimeExpression + ", @mapName, @team1name, @team2name, @serverIp, @serverName)",
@@ -204,9 +211,10 @@ namespace MatchZy
                     matchId = connection.ExecuteScalar<long>("SELECT last_insert_rowid()");
                 }
                 else if (connection is MySqlConnection)
-                {
+                {  
                     matchId = connection.ExecuteScalar<long>("SELECT LAST_INSERT_ID()");
                 }
+                matchId = matchId > 0 ? matchId : -1;
 
                 Log($"[InsertMatchData] Data inserted into matchzy_match_data with match_id: {matchId}");
                 return matchId;
@@ -219,6 +227,12 @@ namespace MatchZy
         }
 
         public void UpdateTeamData(int matchId, string team1name, string team2name) {
+            if (matchId < 0)
+            {
+                Log("matchId is -1, invalid");
+                return;
+            }
+            
             try
             {
                 connection.Execute(@"
@@ -237,6 +251,11 @@ namespace MatchZy
 
         public void SetMatchEndData(long matchId, string winnerName, int t1score, int t2score)
         {
+            if (matchId < 0)
+            {
+                Log("matchId is -1, invalid");
+                return;
+            }
             try
             {
                 string dateTimeExpression = (connection is SqliteConnection) ? "datetime('now')" : "NOW()";
@@ -263,6 +282,11 @@ namespace MatchZy
 
         public void UpdateMatchStats(long matchId, int t1score, int t2score)
         {
+            if (matchId < 0)
+            {
+                Log("matchId is -1, invalid");
+                return;
+            }
             try
             {
                 string sqlQuery = $@"
@@ -284,6 +308,11 @@ namespace MatchZy
 
         public void UpdatePlayerStats(long matchId, string ctTeamName, string tTeamName, Dictionary<int, CCSPlayerController> playerData)
         {
+            if (matchId < 0)
+            {
+                Log("matchId is -1, invalid");
+                return;
+            }
             try
             {
                 foreach (int key in playerData.Keys)
@@ -423,8 +452,61 @@ namespace MatchZy
             }
         }
 
+        public void GetServerExpireDateAndKickPlayerIfNeeded(string serverName, CCSPlayerController player)
+        {
+            Log("[DEBUG] GetServerExpireDateAndKickPlayerIfNeeded");
+            if(serverName == "" || serverName == null) serverName = ConVar.Find("hostname")?.StringValue;
+            try
+            {
+                string sqlQuery = $@"SELECT expiredate, timestamp FROM scrim_servers WHERE servername = @serverName";
+                Log("[DEBUG] sqlQuery: " + sqlQuery);
+                using (var localConnection = new MySqlConnection(connectionStringGlobal))
+                {
+                    localConnection.Open();
+                    var result = localConnection.QueryFirstOrDefault(sqlQuery, new { serverName });
+
+                    if (result != null)
+                    {
+                        DateTime expireDate = result.expiredate;
+                        ServerExpireDate = expireDate.ToString("yyyy-MM-dd");
+                        int timestamp = result.timestamp;
+                        Log("[DEBUG] expireDate: " + expireDate.ToString("yyyy-MM-dd"));
+                        Log("[DEBUG] timestamp: " + timestamp);
+                        Log("[DEBUG] DateTime.Now: " + DateTime.Now.ToString("yyyy-MM-dd"));
+                        if (player == null) return;
+                        if (expireDate.AddDays(2) < DateTime.Now)
+                        {
+                            Log($"[GetServerExpireDateAndKickPlayerIfNeeded] Server expired more than 2 days, kicking player");
+                            if(player.IsValid && !player.IsBot)
+                            {
+                                Server.NextFrame(() => Server.ExecuteCommand($"kickid {player.UserId}"));
+                            }
+                        }
+                        else if(expireDate < DateTime.Now && expireDate.AddDays(2) >= DateTime.Now)
+                        {
+                            Log($"[GetServerExpireDateAndKickPlayerIfNeeded] Server expired within 2 days. Give warning!");
+                        }
+                        else if(expireDate > DateTime.Now)
+                        {
+                            Log($"[GetServerExpireDateAndKickPlayerIfNeeded] Server not expired");
+                        }
+                    }
+                    else
+                    {
+                        Log($"[GetServerExpireDateAndKickPlayerIfNeeded] Server not found, kicking player");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[GetServerExpireDateAndKickPlayerIfNeeded - FATAL] Error getting data: {ex.Message}");
+            }
+        }
+
+
         public void WritePlayerStatsToCsv(string filePath, long matchId)
         {
+            if (matchId < 0) return;
             try {
                 string csvFilePath = $"{filePath}/match_data_{matchId}.csv";
                 string? directoryPath = Path.GetDirectoryName(csvFilePath);

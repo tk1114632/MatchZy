@@ -11,6 +11,7 @@ using CounterStrikeSharp.API.Modules.Events;
 using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.Cvars;
 
 namespace MatchZy
 {
@@ -200,6 +201,52 @@ namespace MatchZy
             }
         }
 
+        [ConsoleCommand("css_demo", "Toggles demo recording for the match")]
+        public void OnDemoCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (IsPlayerAdmin(player, "css_demo", "@css/config"))
+            {
+                if(ConVar.Find("tv_enable").GetPrimitiveValue<bool>() == false)
+                {
+                    ReplyToUserCommand(player, "Cannot toggle demo recording while CSTV is disabled!");
+                    return;
+                }
+                if(isMatchLive)
+                {
+                    ReplyToUserCommand(player, "Cannot toggle demo recording while match is live!");
+                    return;
+                }
+                isDemoRecord = !isDemoRecord;
+                string knifeStatus = isDemoRecord ? "Enabled" : "Disabled";
+                if (player == null)
+                {
+                    ReplyToUserCommand(player, $"Demo recording (DemoÂ¼ÖÆ) is now {knifeStatus}!");
+                }
+                else
+                {
+                    player.PrintToChat($"{chatPrefix} Demo recording (DemoÂ¼ÖÆ) is now {ChatColors.Green}{knifeStatus}{ChatColors.Default}!");
+                }
+            }
+            else
+            {
+                SendPlayerNotAdminMessage(player);
+            }
+        }
+        [ConsoleCommand("css_stopdemo", "Stop recording demo")]
+        public void OnStopDemoCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (IsPlayerAdmin(player, "css_demo", "@css/config"))
+            {
+                StopDemoRecording();
+                Server.PrintToChatAll($"{chatPrefix} Demo recording (DemoÂ¼ÖÆ) has been stopped!");
+            }
+            else
+            {
+                SendPlayerNotAdminMessage(player);
+            }
+        }
+
+
         [ConsoleCommand("css_readyrequired", "Sets number of ready players required to start the match")]
         public void OnReadyRequiredCommand(CCSPlayerController? player, CommandInfo command) {
             if (IsPlayerAdmin(player, "css_readyrequired", "@css/config")) {
@@ -223,10 +270,12 @@ namespace MatchZy
             if (IsPlayerAdmin(player, "css_settings", "@css/config")) {
                 string knifeStatus = isKnifeRequired ? "Enabled" : "Disabled";
                 string playoutStatus = isPlayOutEnabled ? "Enabled" : "Disabled";
+                string demoStatus = isDemoRecord ? "Enabled" : "Disabled";
                 player.PrintToChat($"{chatPrefix} Current Settings:");
                 player.PrintToChat($"{chatPrefix} Knife: {ChatColors.Green}{knifeStatus}{ChatColors.Default}");
                 player.PrintToChat($"{chatPrefix} Minimum Ready Required: {ChatColors.Green}{minimumReadyRequired}{ChatColors.Default}");
                 player.PrintToChat($"{chatPrefix} Playout(full rounds): {ChatColors.Green}{playoutStatus}{ChatColors.Default}");
+                player.PrintToChat($"{chatPrefix} Demo Recording: {ChatColors.Green}{demoStatus}{ChatColors.Default}");
             } else {
                 SendPlayerNotAdminMessage(player);
             }
@@ -261,7 +310,7 @@ namespace MatchZy
             }
             string currentMapName = Server.MapName;
             if (Server.IsMapValid(currentMapName)) {
-                Server.ExecuteCommand($"changelevel \"{currentMapName}\"");
+                Server.ExecuteCommand($"map \"{currentMapName}\"");
             } else {
                 player.PrintToChat($"{chatPrefix} Cant reload a workshop map!");
             }

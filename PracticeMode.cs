@@ -691,6 +691,30 @@ namespace MatchZy
             return;
         }
 
+        [ConsoleCommand("css_rr", "restart round in 1 sec")]
+        public void OnRRCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (matchStarted)
+            {
+                ReplyToUserCommand(player, "Restart round is disabled when a match has been started!");
+                ReplyToUserCommand(player, "比赛模式下不能 .rr");
+                return;
+            }
+
+            if (isPractice)
+            {
+                Server.ExecuteCommand("mp_restartgame 1");
+                Server.PrintToChatAll($"{chatPrefix} Restarting round...");
+                Server.PrintToChatAll($"{chatPrefix} 正在刷新...");
+            }
+            else
+            {
+                ReplyToUserCommand(player, "RR is only available in Prac Mode!");
+                ReplyToUserCommand(player, "只能在Prac模式下使用 .rr 命令");
+            }
+            return;
+        }
+
         [ConsoleCommand("css_undry", "Starts practice mode")]
         public void OnUnDryCommand(CCSPlayerController? player, CommandInfo? command)
         {
