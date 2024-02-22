@@ -449,6 +449,54 @@ namespace MatchZy
             }
         }
 
+        [ConsoleCommand("css_24r", "Toggles .24r command")]
+        public void On24rCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (IsPlayerAdmin(player, "css_playout", "@css/config"))
+            {
+                isPlayOutEnabled = true;
+                string playoutStatus = "Enabled";
+                if (player == null)
+                {
+                    ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
+                    ReplyToUserCommand(player, "当前设置：打满所有局数 (Playout all rounds)");
+                }
+                else
+                {
+                    player.PrintToChat($"{chatPrefix} 当前设置：打满所有局数 (Playout all rounds)");
+                }
+                Server.ExecuteCommand("mp_match_can_clinch false");
+            }
+            else
+            {
+                SendPlayerNotAdminMessage(player);
+            }
+        }
+
+        [ConsoleCommand("css_13r", "Toggles .13r command")]
+        public void On13rCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (IsPlayerAdmin(player, "css_playout", "@css/config"))
+            {
+                isPlayOutEnabled = false;
+                string playoutStatus = "Disabled";
+                if (player == null)
+                {
+                    ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
+                    ReplyToUserCommand(player, "当前设置：赢得13局即结束 (Win on 13 rounds)");
+                }
+                else
+                {
+                    player.PrintToChat($"{chatPrefix} 当前设置：赢得13局即结束 (Win on 13 rounds)");
+                }
+                Server.ExecuteCommand("mp_match_can_clinch true");
+            }
+            else
+            {
+                SendPlayerNotAdminMessage(player);
+            }
+        }
+
         [ConsoleCommand("css_testc4", "move c4")]
         public void OnTestC4Command(CCSPlayerController? player, CommandInfo? command)
         {

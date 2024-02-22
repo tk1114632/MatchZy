@@ -357,6 +357,7 @@ namespace MatchZy
             matchStarted = false;
             readyAvailable = true;
             isPaused = false;
+            isKnifeRequired = false;
 
             isWarmup = true;
             isKnifeRound = false;
@@ -389,6 +390,9 @@ namespace MatchZy
                 { "t", false }
             };
 
+            noFlashList = new();
+            lastGrenadesData = new();
+            nadeSpecificLastGrenadeData = new();
             // Reset owned bots data
             pracUsedBots = new Dictionary<int, Dictionary<string, object>>();
             Server.ExecuteCommand("mp_unpause_match");
@@ -1154,6 +1158,27 @@ namespace MatchZy
 
         private void Log(string message) {
             Console.WriteLine("[MatchZy] " + message);
+        }
+        public void KickPlayer(CCSPlayerController player)
+        {
+            if (player.UserId.HasValue)
+            {
+                Server.ExecuteCommand($"kickid {(ushort)player.UserId}");
+            }
+        }
+        public bool IsPlayerValid(CCSPlayerController? player)
+        {
+            return (
+                player != null &&
+                player.IsValid &&
+                player.PlayerPawn.IsValid &&
+                player.PlayerPawn.Value != null
+            );
+        }
+
+        private void PrintToPlayerChat(CCSPlayerController player, string message)
+        {
+            player.PrintToChat($"{chatPrefix} {message}");
         }
     }
 }

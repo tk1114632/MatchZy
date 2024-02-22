@@ -145,5 +145,20 @@ namespace MatchZy
             }
         }
 
+        [ConsoleCommand("matchzy_max_saved_last_grenades", "Maximum number of grenade history that may be saved per-map, per-client. Set to 0 to disable. Default value: 512")]
+        public void MatchZyMaxSavedLastGrenadesConvar(CCSPlayerController? player, CommandInfo command)
+        {
+            if (player != null) return;
+            string args = command.ArgString;
+
+            if (int.TryParse(args, out int maxLastGrenadesSavedLimitValue))
+            {
+                maxLastGrenadesSavedLimit = maxLastGrenadesSavedLimitValue;
+            }
+            else
+            {
+                command.ReplyToCommand("Usage: matchzy_max_saved_last_grenades <number>");
+            }
+        }
     }
 }

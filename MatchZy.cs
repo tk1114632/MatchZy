@@ -121,8 +121,8 @@ namespace MatchZy
                 { ".playout", OnPlayoutCommand },
                 { ".demo", OnDemoCommand },
                 { ".stopdemo", OnStopDemoCommand },
-                { ".24r", OnPlayoutCommand },
-                { ".13r", OnPlayoutCommand },
+                { ".24r", On24rCommand },
+                { ".13r", On13rCommand },
                 { ".start", OnStartCommand },
                 { ".r3", OnStartCommand },
                 { ".forcestart", OnStartCommand },
@@ -150,7 +150,25 @@ namespace MatchZy
                 { ".dry", OnDryCommand },
                 { ".rr", OnRRCommand },
                 { ".undry", OnUnDryCommand },
-                { ".testc4", OnTestC4Command }
+                { ".testc4", OnTestC4Command },
+                { ".watchme", OnFASCommand },
+                { ".kanwo", OnFASCommand},
+                { ".noflash", OnNoFlashCommand },
+                { ".last", OnLastCommand },
+                { ".throw", OnRethrowCommand },
+                { ".rethrow", OnRethrowCommand },
+                { ".throwsmoke", OnRethrowSmokeCommand },
+                { ".rethrowsmoke", OnRethrowSmokeCommand },
+                { ".thrownade", OnRethrowGrenadeCommand },
+                { ".rethrownade", OnRethrowGrenadeCommand },
+                { ".rethrowgrenade", OnRethrowGrenadeCommand },
+                { ".throwgrenade", OnRethrowGrenadeCommand },
+                { ".rethrowflash", OnRethrowFlashCommand },
+                { ".throwflash", OnRethrowFlashCommand },
+                { ".rethrowdecoy", OnRethrowDecoyCommand },
+                { ".throwdecoy", OnRethrowDecoyCommand },
+                { ".throwmolotov", OnRethrowMolotovCommand },
+                { ".rethrowmolotov", OnRethrowMolotovCommand }
             };
 
             RegisterEventHandler<EventPlayerConnectFull>((@event, info) => {
@@ -524,13 +542,29 @@ namespace MatchZy
 
             RegisterEventHandler<EventPlayerBlind>((@event, info) =>
             {
-                if (isPractice && @event.Userid.SteamID != @event.Attacker.SteamID)
+                CCSPlayerController player = @event.Userid;
+                if (!isPractice) return HookResult.Continue;
+
+                if (@event.Attacker.IsValid && player.SteamID != @event.Attacker.SteamID)
                 {
                     double roundedBlindDuration = Math.Round(@event.BlindDuration, 2);
                     @event.Attacker.PrintToChat($"{chatPrefix} Flashed {@event.Userid.PlayerName}. Blind time: {roundedBlindDuration} seconds");
                 }
+                var userId = player.UserId;
+                if (userId != null && noFlashList.Contains((int)userId))
+                {
+                    Server.NextFrame(() => KillFlashEffect(player));
+                }
+
                 return HookResult.Continue;
             });
+
+            RegisterListener<Listeners.OnEntitySpawned>(OnEntitySpawnedHandler);
+            RegisterEventHandler<EventSmokegrenadeDetonate>(EventSmokegrenadeDetonateHandler);
+            RegisterEventHandler<EventFlashbangDetonate>(EventFlashbangDetonateHandler);
+            RegisterEventHandler<EventHegrenadeDetonate>(EventHegrenadeDetonateHandler);
+            RegisterEventHandler<EventMolotovDetonate>(EventMolotovDetonateHandler);
+            RegisterEventHandler<EventDecoyDetonate>(EventDecoyDetonateHandler);
 
             Console.WriteLine("[MatchZy LOADED] MatchZy by WD- (https://github.com/shobhit-pathak/)");
         }

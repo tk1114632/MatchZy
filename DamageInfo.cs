@@ -90,7 +90,7 @@ namespace MatchZy
                         var attackerController = playerData[attackerId];
                         var targetController = playerData[targetId];
 
-                        if (attackerController != null && targetController != null)
+                        if (attackerController != null && targetController != null )
                         {
                             if (!attackerController.IsValid || !targetController.IsValid) continue;
                             if (attackerController.Connected != PlayerConnectedState.PlayerConnected) continue;
@@ -103,10 +103,15 @@ namespace MatchZy
                             int targetHP = targetController.PlayerPawn.Value.Health < 0 ? 0 : targetController.PlayerPawn.Value.Health;
                             string targetName = targetController.PlayerName;
 
-                            attackerController.PrintToChat($"{chatPrefix} {ChatColors.Green}To: [{damageGiven} / {hitsGiven} hits] From: [{damageTaken} / {hitsTaken} hits] - {targetName} - ({targetHP} hp){ChatColors.Default}");
-                            targetController.PrintToChat($"{chatPrefix} {ChatColors.Green}To: [{damageTaken} / {hitsTaken} hits] From: [{damageGiven} / {hitsGiven} hits] - {attackerName} - ({attackerHP} hp){ChatColors.Default}");
+                            if(targetController.Clan != "[ COACH ]")
+                            {
+                                attackerController.PrintToChat($"{chatPrefix} {ChatColors.Green}To: [{damageGiven} / {hitsGiven} hits] From: [{damageTaken} / {hitsTaken} hits] - {targetName} - ({targetHP} hp){ChatColors.Default}");
+                            }
+                            if(attackerController.Clan != "[ COACH ]")
+                            {
+                                targetController.PrintToChat($"{chatPrefix} {ChatColors.Green}To: [{damageTaken} / {hitsTaken} hits] From: [{damageGiven} / {hitsGiven} hits] - {attackerName} - ({attackerHP} hp){ChatColors.Default}");
+                            }
                         }
-
                         // Mark this pair as processed to avoid duplicates.
                         processedPairs.Add((attackerId, targetId));
                     }

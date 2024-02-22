@@ -35,6 +35,12 @@ namespace MatchZy
 
     public partial class MatchZy
     {
+        int maxLastGrenadesSavedLimit = 512;
+        Dictionary<int, List<GrenadeThrownData>> lastGrenadesData = new();
+        Dictionary<int, Dictionary<string, GrenadeThrownData>> nadeSpecificLastGrenadeData = new();
+        Dictionary<int, DateTime> lastGrenadeThrownTime = new();
+        Dictionary<int, PlayerPracticeTimer> playerTimers = new();
+
         public Dictionary<byte, List<Position>> spawnsData = new Dictionary<byte, List<Position>> {
             { (byte)CsTeam.CounterTerrorist, new List<Position>() },
             { (byte)CsTeam.Terrorist, new List<Position>() }
@@ -51,6 +57,8 @@ namespace MatchZy
         public Dictionary<int, Dictionary<string, object>> pracUsedBots = new Dictionary<int, Dictionary<string, object>>();
 
         public bool isSpawningBot;
+
+        public List<int> noFlashList = new List<int>();
 
         public void StartPracticeMode()
         {
@@ -76,8 +84,8 @@ namespace MatchZy
             GetSpawns();
             Server.PrintToChatAll($"{chatPrefix} Prac mode loaded!");
             Server.PrintToChatAll($"{chatPrefix} Available commands (ø…”√÷∏¡Ó):");
-	        Server.PrintToChatAll($"{chatPrefix} \x10.spawn .ctspawn .tspawn .bot .nobots .dry .noprac");
-	        //Server.PrintToChatAll($"{chatPrefix} \x10.loadnade <name>, .savenade <name>, .importnade <code> .listnades <optional filter>");
+	        Server.PrintToChatAll($"{chatPrefix} \x10.spawn .ctspawn .tspawn .bot .nobots .dry .noprac .throw");
+            //Server.PrintToChatAll($"{chatPrefix} \x10.loadnade <name>, .savenade <name>, .importnade <code> .listnades <optional filter>");
         }
         public class CustomSpawnPoint
         {
@@ -191,7 +199,7 @@ namespace MatchZy
 
         private void HandleSpawnCommand(CCSPlayerController? player, string commandArg, byte teamNum, string command)
         {
-            if (!isPractice || player == null) return;
+            if (!isPractice || !IsPlayerValid(player)) return;
             if (teamNum != 2 && teamNum != 3) return;
             if (!string.IsNullOrWhiteSpace(commandArg))
             {
@@ -238,7 +246,7 @@ namespace MatchZy
 
         private void HandleSaveNadeCommand(CCSPlayerController? player, string saveNadeName)
         {
-            if (!isPractice || player == null) return;
+            if (!isPractice || !IsPlayerValid(player)) return;
 
             if (!string.IsNullOrWhiteSpace(saveNadeName))
             {
@@ -757,6 +765,56 @@ namespace MatchZy
             }
         }
 
+        [ConsoleCommand("css_watchme", "Switches all other players to spectator")]
+        public void OnFASCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (!isPractice || player == null) return;
+
+            SideSwitchCommand(player, CsTeam.None);
+        }
+
+        [ConsoleCommand("css_noflash", "Disables flash effect for the player")]
+        public void OnNoFlashCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (!isPractice || player == null || player.UserId == null) return;
+
+            int userId = player.UserId.Value;
+
+            if (noFlashList.Contains(userId))
+            {
+                noFlashList.Remove(userId);
+                ReplyToUserCommand(player, "Disabled noflash.");
+            }
+            else
+            {
+                noFlashList.Add(userId);
+                ReplyToUserCommand(player, "Enabled noflash. Use .noflash again to disable.");
+                Server.NextFrame(() => KillFlashEffect(player));
+            }
+
+        }
+
+        // CsTeam.None is a special value to mean force all other players to spectator
+        private void SideSwitchCommand(CCSPlayerController player, CsTeam team)
+        {
+            if (team > CsTeam.None)
+            {
+                if (player.TeamNum == (byte)CsTeam.Spectator)
+                {
+                    ReplyToUserCommand(player, "Switching to a team from spectator is currently broken, use the team menu.");
+                    return;
+                }
+                player.ChangeTeam(team);
+                return;
+            }
+            Utilities.GetPlayers().ForEach((x) => {
+                if (x.IsValid && !x.IsBot && x.UserId != player.UserId && x.Connected == PlayerConnectedState.PlayerConnected)
+                {
+                    x.ChangeTeam(CsTeam.Spectator);
+                }
+            });
+        }
+
         [ConsoleCommand("css_ctspawn", "Teleport to provided CT spawn")]
         public void OnCtSpawnCommand(CCSPlayerController? player, CommandInfo command)
         {
@@ -995,6 +1053,13 @@ namespace MatchZy
                 playerData[key].PlayerPawn.Value.MoveType = preFastForwardMoveTypes[key];
             }
         }
+        public void KillFlashEffect(CCSPlayerController player)
+        {
+            var playerPawn = player.PlayerPawn.Value;
+            if (playerPawn == null) return;
+            Log($"[KillFlashEffect] Killing flash effect for player: {player.PlayerName}");
+            playerPawn.FlashMaxAlpha = 0.5f;
+        }
 
         [ConsoleCommand("css_clear", "Removes all the available granades")]
         public void OnClearCommand(CCSPlayerController? player, CommandInfo? command)
@@ -1027,5 +1092,295 @@ namespace MatchZy
             Server.ExecuteCommand("mp_death_drop_breachcharge true; mp_death_drop_defuser true; mp_death_drop_taser true; mp_drop_knife_enable false; mp_death_drop_grenade 2; ammo_grenade_limit_total 4; mp_defuser_allocation 0; sv_infinite_ammo 0; mp_force_pick_time 15");
         }
 
+        public bool IsValidPositionForLastGrenade(CCSPlayerController player, int position)
+        {
+            int userId = player.UserId!.Value;
+            if (!lastGrenadesData.ContainsKey(userId) || lastGrenadesData[userId].Count <= 0)
+            {
+                PrintToPlayerChat(player, $"You have not thrown any nade yet!");
+                return false;
+            }
+
+            if (lastGrenadesData[userId].Count < position)
+            {
+                PrintToPlayerChat(player, $"Your grenade history only goes from 1 to {lastGrenadesData[userId].Count}!");
+                return false;
+            }
+
+            return true;
+        }
+
+        public void RethrowSpecificNade(CCSPlayerController player, string nadeType)
+        {
+            if (!isPractice || !player.UserId.HasValue) return;
+            int userId = player.UserId.Value;
+            if (!nadeSpecificLastGrenadeData.ContainsKey(userId) || !nadeSpecificLastGrenadeData[userId].ContainsKey(nadeType))
+            {
+                PrintToPlayerChat(player, $"You have not thrown any {nadeType} yet!");
+                return;
+            }
+            GrenadeThrownData grenadeThrown = nadeSpecificLastGrenadeData[userId][nadeType];
+            AddTimer(grenadeThrown.Delay, () => grenadeThrown.Throw(player));
+        }
+
+        public void HandleBackCommand(CCSPlayerController player, string number)
+        {
+            if (!isPractice || player == null || !player.UserId.HasValue) return;
+            int userId = player.UserId.Value;
+            if (!string.IsNullOrWhiteSpace(number))
+            {
+                if (int.TryParse(number, out int positionNumber) && positionNumber >= 1)
+                {
+                    if (IsValidPositionForLastGrenade(player, positionNumber))
+                    {
+                        positionNumber -= 1;
+                        lastGrenadesData[userId][positionNumber].LoadPosition(player);
+                        PrintToPlayerChat(player, $"Teleported to grenade of history position: {positionNumber+1}/{lastGrenadesData[userId].Count}");
+                    }
+                }
+                else
+                {
+                    PrintToPlayerChat(player, $"Invalid value for !back command. Please specify a valid non-negative number. Usage: !back <number>");
+                    return;
+                }
+            }
+            else
+            {
+                int thrownCount = lastGrenadesData.ContainsKey(userId) ? lastGrenadesData[userId].Count : 0;
+                ReplyToUserCommand(player, $"Usage: !back <number> (You've thrown {thrownCount} grenades till now)");
+            }
+        }
+
+        public void HandleThrowIndexCommand(CCSPlayerController player, string argString)
+        {
+            if (!isPractice || !IsPlayerValid(player)) return;
+            int userId = player!.UserId!.Value;
+
+            string[] argsList = argString.Split();
+
+            foreach (string arg in argsList)
+            {
+                if (int.TryParse(arg, out int positionNumber) && positionNumber >= 1)
+                {
+                    if (IsValidPositionForLastGrenade(player, positionNumber))
+                    {
+                        positionNumber -= 1;
+                        GrenadeThrownData grenadeThrown = lastGrenadesData[userId][positionNumber];
+                        AddTimer(grenadeThrown.Delay, () => grenadeThrown.Throw(player));
+                        PrintToPlayerChat(player, $"Throwing grenade of history position: {positionNumber+1}/{lastGrenadesData[userId].Count}");
+                    }
+                }
+                else
+                {
+                    PrintToPlayerChat(player, $"'{arg}' is not a valid non-negative number for !throwindex command.");
+                }
+            }
+        }
+
+        public void HandleDelayCommand(CCSPlayerController player, string delay)
+        {
+            if (!isPractice || !IsPlayerValid(player)) return;
+
+            if (!isPractice || player == null || !player.UserId.HasValue) return;
+            int userId = player.UserId.Value;
+            if (string.IsNullOrWhiteSpace(delay))
+            {
+                ReplyToUserCommand(player, $"Usage: !delay <delay_in_seconds>");
+                return;
+            }
+
+            if (float.TryParse(delay, out float delayInSeconds) && delayInSeconds > 0)
+            {
+                if (IsValidPositionForLastGrenade(player, 0))
+                {
+                    lastGrenadesData[userId].Last().Delay = delayInSeconds;
+                    PrintToPlayerChat(player, $"Delay of {delayInSeconds:0.00}s set for grenade of index: {lastGrenadesData[userId].Count}.");
+                }
+            }
+            else
+            {
+                PrintToPlayerChat(player, $"Delay should be valid float number and greater than 0 seconds.");
+                return;
+            }
+        }
+
+        public void DisplayPracticeTimerCenter(int userId)
+        {
+            if (!playerData.ContainsKey(userId) || !playerTimers.ContainsKey(userId)) return;
+            if (!IsPlayerValid(playerData[userId])) return;
+            playerTimers[userId].DisplayTimerCenter(playerData[userId]);
+        }
+
+        [ConsoleCommand("css_throw", "Throws the last thrown grenade")]
+        [ConsoleCommand("css_rethrow", "Throws the last thrown grenade")]
+        public void OnRethrowCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+
+            if (!isPractice || player == null || !player.UserId.HasValue) return;
+            int userId = player.UserId.Value;
+            if (!lastGrenadesData.ContainsKey(userId) || lastGrenadesData[userId].Count <= 0)
+            {
+                PrintToPlayerChat(player, $"You have not thrown any nade yet!");
+                return;
+            }
+            GrenadeThrownData lastGrenade = lastGrenadesData[userId].Last();
+            AddTimer(lastGrenade.Delay, () => lastGrenade.Throw(player));
+        }
+
+        [ConsoleCommand("css_throwsmoke", "Throws the last thrown smoke")]
+        [ConsoleCommand("css_rethrowsmoke", "Throws the last thrown smoke")]
+        public void OnRethrowSmokeCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (player == null) return;
+            RethrowSpecificNade(player, "smoke");
+        }
+
+        [ConsoleCommand("css_throwflash", "Throws the last thrown flash")]
+        [ConsoleCommand("css_rethrowflash", "Throws the last thrown flash")]
+        public void OnRethrowFlashCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (player == null) return;
+            RethrowSpecificNade(player, "flash");
+        }
+
+        [ConsoleCommand("css_throwgrenade", "Throws the last thrown he grenade")]
+        [ConsoleCommand("css_rethrowgrenade", "Throws the last thrown he grenade")]
+        [ConsoleCommand("css_thrownade", "Throws the last thrown he grenade")]
+        [ConsoleCommand("css_rethrownade", "Throws the last thrown he grenade")]
+        public void OnRethrowGrenadeCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (player == null) return;
+            RethrowSpecificNade(player, "hegrenade");
+        }
+
+        [ConsoleCommand("css_throwmolotov", "Throws the last thrown molotov")]
+        [ConsoleCommand("css_rethrowmolotov", "Throws the last thrown molotov")]
+        public void OnRethrowMolotovCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (player == null) return;
+            RethrowSpecificNade(player, "molotov");
+        }
+
+        [ConsoleCommand("css_throwdecoy", "Throws the last thrown decoy")]
+        [ConsoleCommand("css_rethrowdecoy", "Throws the last thrown decoy")]
+        public void OnRethrowDecoyCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (player == null) return;
+            RethrowSpecificNade(player, "decoy");
+        }
+
+        [ConsoleCommand("css_last", "Teleports to the last thrown grenade position")]
+        public void OnLastCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (!isPractice || player == null || !player.UserId.HasValue) return;
+            int userId = player.UserId.Value;
+            if (!lastGrenadesData.ContainsKey(userId) || lastGrenadesData[userId].Count <= 0)
+            {
+                PrintToPlayerChat(player, $"You have not thrown any nade yet!");
+                return;
+            }
+            lastGrenadesData[userId].Last().LoadPosition(player);
+        }
+
+        [ConsoleCommand("css_back", "Teleports to the provided position in grenade thrown history")]
+        public void OnBackCommand(CCSPlayerController? player, CommandInfo command)
+        {
+            if (!isPractice || player == null || !player.UserId.HasValue) return;
+            if (command.ArgCount >= 2) 
+            {
+                string commandArg = command.ArgByIndex(1);
+                HandleBackCommand(player, commandArg);
+            }
+            else 
+            {
+                int userId = player!.UserId!.Value;
+                int thrownCount = lastGrenadesData.ContainsKey(userId) ? lastGrenadesData[userId].Count : 0;
+                ReplyToUserCommand(player, $"Usage: !back <number> (You've thrown {thrownCount} grenades till now)");
+            }      
+        }
+
+        [ConsoleCommand("css_throwidx", "Throws grenade of provided position in grenade thrown history")]
+        [ConsoleCommand("css_throwindex", "Throws grenade of provided position in grenade thrown history")]
+        public void OnThrowIndexCommand(CCSPlayerController? player, CommandInfo command)
+        {
+            if (!isPractice || !IsPlayerValid(player)) return;
+            if (command.ArgCount >= 2) 
+            {
+                HandleThrowIndexCommand(player!, command.ArgString);
+            }
+            else 
+            {
+                int userId = player!.UserId!.Value;
+                int thrownCount = lastGrenadesData.ContainsKey(userId) ? lastGrenadesData[userId].Count : 0;
+                ReplyToUserCommand(player, $"Usage: !throwindex <number> (You've thrown {thrownCount} grenades till now)");
+            }      
+        }
+
+        [ConsoleCommand("css_lastindex", "Returns index of the last thrown grenade")]
+        public void OnLastIndexCommand(CCSPlayerController? player, CommandInfo command)
+        {
+            if (!isPractice || !IsPlayerValid(player)) return;
+            if (IsValidPositionForLastGrenade(player!, 1))
+            {
+                PrintToPlayerChat(player!, $"Index of last thrown grenade: {lastGrenadesData[player!.UserId!.Value].Count}");
+            } 
+        }
+
+        [ConsoleCommand("css_delay", "Adds a delay to the last thrown grenade. Usage: !delay <delay_in_seconds>")]
+        public void OnDelayCommand(CCSPlayerController? player, CommandInfo command)
+        {
+            if (!isPractice || !IsPlayerValid(player)) return;
+            if (command.ArgCount >= 2) 
+            {
+                HandleDelayCommand(player!, command.ArgByIndex(1));
+            }
+            else 
+            {
+                ReplyToUserCommand(player, $"Usage: !delay <delay_in_seconds>");
+            }      
+        }
+
+        [ConsoleCommand("css_timer", "Starts a timer, use .timer again to stop it.")]
+        public void OnTimerCommand(CCSPlayerController? player, CommandInfo command)
+        {
+            if (!isPractice || !IsPlayerValid(player)) return;
+            int userId = player!.UserId!.Value;
+            if (playerTimers.ContainsKey(userId))
+            {
+                playerTimers[userId].KillTimer();
+                double timerResult = playerTimers[userId].GetTimerResult();
+                player.PrintToCenter($"Timer: {timerResult}s");
+                PrintToPlayerChat(player, $"Timer stopped! Result: {timerResult}s");
+                playerTimers.Remove(userId);
+            }
+            else
+            {
+                playerTimers[userId] = new PlayerPracticeTimer(PracticeTimerType.OnMovement)
+                {
+                    StartTime = DateTime.Now,
+                    Timer = AddTimer(0.1f, () => DisplayPracticeTimerCenter(userId), TimerFlags.REPEAT)
+                };
+                PrintToPlayerChat(player, $"Timer started! User !timer to stop it.");
+            }
+        }
+
+        // Todo: Implement timer2 when we have OnPlayerRunCmd in CS#. Using OnTick would be its alternative, it would be very expensive and not worth it.
+        // [ConsoleCommand("css_timer2", "Starts a timer, use .timer2 again to stop it.")]
+        // public void OnTimer2Command(CCSPlayerController? player, CommandInfo command)
+        // {
+        //     if (!isPractice || !IsPlayerValid(player)) return;
+        //     int userId = player!.UserId!.Value;
+        //     if (playerTimers.ContainsKey(userId))
+        //     {
+        //         PrintToPlayerChat(player, $"Timer stopped! Result: {playerTimers[userId].GetTimerResult()}s");
+        //         playerTimers[userId].KillTimer();
+        //         playerTimers.Remove(userId);
+        //     }
+        //     else
+        //     {
+        //         playerTimers[userId] = new PlayerPracticeTimer(PracticeTimerType.OnMovement);
+        //         PrintToPlayerChat(player, $"When you start moving a timer will run until you stop moving.");
+        //     }
+        // }
     }
 }
