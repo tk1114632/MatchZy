@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -220,11 +220,11 @@ namespace MatchZy
                 string knifeStatus = isDemoRecord ? "Enabled" : "Disabled";
                 if (player == null)
                 {
-                    ReplyToUserCommand(player, $"Demo recording (DemoÂ¼ÖÆ) is now {knifeStatus}!");
+                    ReplyToUserCommand(player, $"Demo recording (Demoå½•åˆ¶) is now {knifeStatus}!");
                 }
                 else
                 {
-                    player.PrintToChat($"{chatPrefix} Demo recording (DemoÂ¼ÖÆ) is now {ChatColors.Green}{knifeStatus}{ChatColors.Default}!");
+                    player.PrintToChat($"{chatPrefix} Demo recording (Demoå½•åˆ¶) is now {ChatColors.Green}{knifeStatus}{ChatColors.Default}!");
                 }
             }
             else
@@ -238,7 +238,7 @@ namespace MatchZy
             if (IsPlayerAdmin(player, "css_demo", "@css/config"))
             {
                 StopDemoRecording();
-                Server.PrintToChatAll($"{chatPrefix} Demo recording (DemoÂ¼ÖÆ) has been stopped!");
+                Server.PrintToChatAll($"{chatPrefix} Demo recording (Demoå½•åˆ¶) has been stopped!");
             }
             else
             {
@@ -310,7 +310,7 @@ namespace MatchZy
             }
             string currentMapName = Server.MapName;
             if (Server.IsMapValid(currentMapName)) {
-                Server.ExecuteCommand($"map \"{currentMapName}\"");
+                Server.ExecuteCommand($"bot_kick;map \"{currentMapName}\"");
             } else {
                 player.PrintToChat($"{chatPrefix} Cant reload a workshop map!");
             }
@@ -423,18 +423,18 @@ namespace MatchZy
                     ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
                     if (isPlayOutEnabled)
                     {
-                        ReplyToUserCommand(player, "µ±Ç°ÉèÖÃ£º´òÂúËùÓÐ¾ÖÊý");
+                        ReplyToUserCommand(player, "å½“å‰è®¾ç½®ï¼šæ‰“æ»¡æ‰€æœ‰å±€æ•°");
                     } else
                     {
-                        ReplyToUserCommand(player, "µ±Ç°ÉèÖÃ£ºÓ®µÃ13¾Ö¼´½áÊø±ÈÈü");
+                        ReplyToUserCommand(player, "å½“å‰è®¾ç½®ï¼šèµ¢å¾—13å±€å³ç»“æŸæ¯”èµ›");
                     }
                 } else {
                     if (isPlayOutEnabled)
                     {
-                        player.PrintToChat($"{chatPrefix} µ±Ç°ÉèÖÃ£º´òÂúËùÓÐ¾ÖÊý");
+                        player.PrintToChat($"{chatPrefix} å½“å‰è®¾ç½®ï¼šæ‰“æ»¡æ‰€æœ‰å±€æ•°");
                     } else
                     {
-                        player.PrintToChat($"{chatPrefix} µ±Ç°ÉèÖÃ£ºÓ®µÃ13¾Ö¼´½áÊø±ÈÈü");
+                        player.PrintToChat($"{chatPrefix} å½“å‰è®¾ç½®ï¼šèµ¢å¾—13å±€å³ç»“æŸæ¯”èµ›");
                     }
                 }
                 
@@ -459,11 +459,11 @@ namespace MatchZy
                 if (player == null)
                 {
                     ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
-                    ReplyToUserCommand(player, "µ±Ç°ÉèÖÃ£º´òÂúËùÓÐ¾ÖÊý (Playout all rounds)");
+                    ReplyToUserCommand(player, "å½“å‰è®¾ç½®ï¼šæ‰“æ»¡æ‰€æœ‰å±€æ•° (Playout all rounds)");
                 }
                 else
                 {
-                    player.PrintToChat($"{chatPrefix} µ±Ç°ÉèÖÃ£º´òÂúËùÓÐ¾ÖÊý (Playout all rounds)");
+                    player.PrintToChat($"{chatPrefix} å½“å‰è®¾ç½®ï¼šæ‰“æ»¡æ‰€æœ‰å±€æ•° (Playout all rounds)");
                 }
                 Server.ExecuteCommand("mp_match_can_clinch false");
             }
@@ -483,11 +483,11 @@ namespace MatchZy
                 if (player == null)
                 {
                     ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
-                    ReplyToUserCommand(player, "µ±Ç°ÉèÖÃ£ºÓ®µÃ13¾Ö¼´½áÊø (Win on 13 rounds)");
+                    ReplyToUserCommand(player, "å½“å‰è®¾ç½®ï¼šèµ¢å¾—13å±€å³ç»“æŸ (Win on 13 rounds)");
                 }
                 else
                 {
-                    player.PrintToChat($"{chatPrefix} µ±Ç°ÉèÖÃ£ºÓ®µÃ13¾Ö¼´½áÊø (Win on 13 rounds)");
+                    player.PrintToChat($"{chatPrefix} å½“å‰è®¾ç½®ï¼šèµ¢å¾—13å±€å³ç»“æŸ (Win on 13 rounds)");
                 }
                 Server.ExecuteCommand("mp_match_can_clinch true");
             }
@@ -507,6 +507,21 @@ namespace MatchZy
                 {
                     GiveC4ToARandomPlayer();
                 }
+            }
+        }
+
+        [ConsoleCommand("css_ws", "Weapon Skins")]
+        public void OnWSCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (player != null && player.IsValid && !player.IsBot)
+            {
+                player.PrintToChat($"{chatPrefix} Please go to TGPRO Skin Changer {ChatColors.Orange}https://skins.tgpro.net{ChatColors.White} to select Skins/Knifes/Gloves");
+                player.PrintToChat($"{chatPrefix} è¯·ä½¿ç”¨TGPROæ¢çš®è‚¤ç½‘é¡µ {ChatColors.Orange}https://skins-cn.tgpro.net{ChatColors.White} æ¥é€‰æ‹©çš®è‚¤ã€æ‰‹å¥—ã€‚ï¼ˆéœ€è¦åŠ é€Ÿå™¨ï¼Œç™»å½•Steamç½‘é¡µ)");
+                player.PrintToCenter("Hint: Use Steam in-game browswer to open the link");
+                player.PrintToConsole(" ");
+                player.PrintToConsole("Hint: Use Steam in-game browswer to open the following link");
+                player.PrintToConsole(">  https://skins-.tgpro.net");
+                player.PrintToConsole(" ");
             }
         }
     }

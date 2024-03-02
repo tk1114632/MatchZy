@@ -1,4 +1,4 @@
-using CounterStrikeSharp.API;
+ï»¿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
@@ -48,7 +48,7 @@ namespace MatchZy
             if (player == null || !player.PlayerPawn.IsValid) return;
             if (isPractice) {
                 ReplyToUserCommand(player, "Uncoach is only available in match mode!");
-                ReplyToUserCommand(player, ".uncoach Ö»ÄÜÔÚ±ÈÈüÄ£Ê½Ê¹ÓÃ");
+                ReplyToUserCommand(player, ".uncoach åªèƒ½åœ¨æ¯”èµ›æ¨¡å¼ä½¿ç”¨");
                 return;
             }
 
@@ -62,14 +62,14 @@ namespace MatchZy
             }
             else {
                 ReplyToUserCommand(player, "You are not coaching any team!");
-                ReplyToUserCommand(player, "Äã²»ÔÚ½ÌÁ·Î»");
+                ReplyToUserCommand(player, "ä½ ä¸åœ¨æ•™ç»ƒä½");
                 return;
             }*/
 
             if(coachPlayers.Find(x=>x.player == player) == null)
             {
                 ReplyToUserCommand(player, "You are not coaching any team!");
-                ReplyToUserCommand(player, "Äã²»ÔÚ½ÌÁ·Î»");
+                ReplyToUserCommand(player, "ä½ ä¸åœ¨æ•™ç»ƒä½");
                 return;
             }
             else
@@ -77,7 +77,7 @@ namespace MatchZy
                 player.Clan = "";
                 if (player.InGameMoneyServices != null) player.InGameMoneyServices.Account = 0;
                 ReplyToUserCommand(player, "You are now not coaching team anymore!");
-                ReplyToUserCommand(player, "ÄãÒÑÍË³ö½ÌÁ·Î»");
+                ReplyToUserCommand(player, "ä½ å·²é€€å‡ºæ•™ç»ƒä½");
                 coachPlayers.Remove(coachPlayers.Find(x => x.player == player));
             }
             
@@ -87,7 +87,7 @@ namespace MatchZy
             if (player == null || !player.PlayerPawn.IsValid) return;
             if (isPractice) {
                 ReplyToUserCommand(player, "Coach is only available in warmup period of match mode!");
-                ReplyToUserCommand(player, ".coach Ö»ÄÜÔÚ±ÈÈüÄ£Ê½µÄÈÈÉí½×¶Î¼ÓÈë½ÌÁ·Î»");
+                ReplyToUserCommand(player, ".coach åªèƒ½åœ¨æ¯”èµ›æ¨¡å¼çš„çƒ­èº«é˜¶æ®µåŠ å…¥æ•™ç»ƒä½");
                 return;
             }
 
@@ -95,14 +95,14 @@ namespace MatchZy
 
             if (side != "t" && side != "ct") {
                 ReplyToUserCommand(player, "Usage: .coach t or .coach ct");
-                ReplyToUserCommand(player, "ÓÃ·¨: .coach t »ò .coach ct");
+                ReplyToUserCommand(player, "ç”¨æ³•: .coach t æˆ– .coach ct");
                 return;
             }
 
             if (matchzyTeam1.coach == player || matchzyTeam2.coach == player) 
             {
                 ReplyToUserCommand(player, "You are already coaching a team!");
-                ReplyToUserCommand(player, "ÄãÒÑ¾­ÔÚ½ÌÁ·Î»ÁË");
+                ReplyToUserCommand(player, "ä½ å·²ç»åœ¨æ•™ç»ƒä½äº†");
                 return;
             }
 
@@ -118,7 +118,7 @@ namespace MatchZy
 
             *//*if (matchZyCoachTeam.coach != null) {
                 ReplyToUserCommand(player, "Only 1 coach slot available!");
-                ReplyToUserCommand(player, "Ö»ÓĞ1¸ö½ÌÁ·Î»¿É¹©Ê¹ÓÃ");
+                ReplyToUserCommand(player, "åªæœ‰1ä¸ªæ•™ç»ƒä½å¯ä¾›ä½¿ç”¨");
                 return;
             }*//*
 
@@ -160,9 +160,9 @@ namespace MatchZy
             }
             
             /*ReplyToUserCommand(player, $"Now coaching {matchZyCoachTeam.teamName}! Use .uncoach to stop coaching");
-            ReplyToUserCommand(player, $"½øÈë½ÌÁ·Î»: {matchZyCoachTeam.teamName}! ÊäÈë .uncoach ÍË³ö½ÌÁ·Î»");
+            ReplyToUserCommand(player, $"è¿›å…¥æ•™ç»ƒä½: {matchZyCoachTeam.teamName}! è¾“å…¥ .uncoach é€€å‡ºæ•™ç»ƒä½");
             Server.PrintToChatAll($"{chatPrefix} {ChatColors.Green}{player.PlayerName}{ChatColors.Default} is now coaching {ChatColors.Green}{matchZyCoachTeam.teamName}{ChatColors.Default}!");
-            Server.PrintToChatAll($"{chatPrefix} {ChatColors.Green}{player.PlayerName}{ChatColors.Default} ÏÖÔÚÊÇ {ChatColors.Green}{matchZyCoachTeam.teamName}{ChatColors.Default} µÄ½ÌÁ·");*/
+            Server.PrintToChatAll($"{chatPrefix} {ChatColors.Green}{player.PlayerName}{ChatColors.Default} ç°åœ¨æ˜¯ {ChatColors.Green}{matchZyCoachTeam.teamName}{ChatColors.Default} çš„æ•™ç»ƒ");*/
         }
 
         public void HandleCoaches() 

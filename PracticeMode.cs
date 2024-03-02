@@ -1,4 +1,4 @@
-using CounterStrikeSharp.API;
+ï»¿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -83,7 +83,7 @@ namespace MatchZy
             }
             GetSpawns();
             Server.PrintToChatAll($"{chatPrefix} Prac mode loaded!");
-            Server.PrintToChatAll($"{chatPrefix} Available commands (¿ÉÓÃÖ¸Áî):");
+            Server.PrintToChatAll($"{chatPrefix} Available commands (å¯ç”¨æŒ‡ä»¤):");
 	        Server.PrintToChatAll($"{chatPrefix} \x10.spawn .ctspawn .tspawn .bot .nobots .dry .noprac .throw");
             //Server.PrintToChatAll($"{chatPrefix} \x10.loadnade <name>, .savenade <name>, .importnade <code> .listnades <optional filter>");
         }
@@ -660,7 +660,7 @@ namespace MatchZy
             if (matchStarted)
             {
                 ReplyToUserCommand(player, "Practice Mode cannot be started when a match has been started!");
-                ReplyToUserCommand(player, "±ÈÈüÒÑ¿ªÊ¼£¬ÎŞ·¨½øÈëPracÄ£Ê½£»ÇëÏÈÊäÈë .endmatch ÍË³ö±ÈÈü");
+                ReplyToUserCommand(player, "æ¯”èµ›å·²å¼€å§‹ï¼Œæ— æ³•è¿›å…¥Pracæ¨¡å¼ï¼›è¯·å…ˆè¾“å…¥ .endmatch é€€å‡ºæ¯”èµ›");
                 return;
             }
 	    
@@ -668,7 +668,7 @@ namespace MatchZy
 			{
                 //StartMatchMode();
                 ReplyToUserCommand(player, "Practice Mode is already ON, use .noprac/.setup to start match mode!");
-                ReplyToUserCommand(player, "ÒÑ´¦ÓÚPracÄ£Ê½£¬ÊäÈë .noprac/.setup ÍË³öPracÄ£Ê½");
+                ReplyToUserCommand(player, "å·²å¤„äºPracæ¨¡å¼ï¼Œè¾“å…¥ .noprac/.setup é€€å‡ºPracæ¨¡å¼");
                 return;
 			}
 	
@@ -681,7 +681,7 @@ namespace MatchZy
             if (matchStarted)
             {
                 ReplyToUserCommand(player, "Dry run is disabled when a match has been started!");
-                ReplyToUserCommand(player, "±ÈÈüÄ£Ê½ÏÂ²»ÄÜ .dry ÅÜÍ¼");
+                ReplyToUserCommand(player, "æ¯”èµ›æ¨¡å¼ä¸‹ä¸èƒ½ .dry è·‘å›¾");
                 return;
             }
 
@@ -689,12 +689,12 @@ namespace MatchZy
             {
                 DryrunOnce();
                 Server.PrintToChatAll($"{chatPrefix} Restarting round with freezetime; use .undry to go back to Prac Mode!");
-                Server.PrintToChatAll($"{chatPrefix} ÕıÔÚ .dry Ë¢ĞÂ£¨¶³½áÊ±¼ä¡¢¹ºÂòÏŞÖÆ£©; ÊäÈë .undry ·µ»ØPracÄ£Ê½");
+                Server.PrintToChatAll($"{chatPrefix} æ­£åœ¨ .dry åˆ·æ–°ï¼ˆå†»ç»“æ—¶é—´ã€è´­ä¹°é™åˆ¶ï¼‰; è¾“å…¥ .undry è¿”å›Pracæ¨¡å¼");
             }
             else
             {
                 ReplyToUserCommand(player, "Dry run is only available in Prac Mode!");
-                ReplyToUserCommand(player, "Ö»ÄÜÔÚPracÄ£Ê½ÏÂÊ¹ÓÃ .dry ÃüÁî");
+                ReplyToUserCommand(player, "åªèƒ½åœ¨Pracæ¨¡å¼ä¸‹ä½¿ç”¨ .dry å‘½ä»¤");
             }
             return;
         }
@@ -705,7 +705,7 @@ namespace MatchZy
             if (matchStarted)
             {
                 ReplyToUserCommand(player, "Restart round is disabled when a match has been started!");
-                ReplyToUserCommand(player, "±ÈÈüÄ£Ê½ÏÂ²»ÄÜ .rr");
+                ReplyToUserCommand(player, "æ¯”èµ›æ¨¡å¼ä¸‹ä¸èƒ½ .rr");
                 return;
             }
 
@@ -713,12 +713,12 @@ namespace MatchZy
             {
                 Server.ExecuteCommand("mp_restartgame 1");
                 Server.PrintToChatAll($"{chatPrefix} Restarting round...");
-                Server.PrintToChatAll($"{chatPrefix} ÕıÔÚË¢ĞÂ...");
+                Server.PrintToChatAll($"{chatPrefix} æ­£åœ¨åˆ·æ–°...");
             }
             else
             {
                 ReplyToUserCommand(player, "RR is only available in Prac Mode!");
-                ReplyToUserCommand(player, "Ö»ÄÜÔÚPracÄ£Ê½ÏÂÊ¹ÓÃ .rr ÃüÁî");
+                ReplyToUserCommand(player, "åªèƒ½åœ¨Pracæ¨¡å¼ä¸‹ä½¿ç”¨ .rr å‘½ä»¤");
             }
             return;
         }
@@ -736,12 +736,12 @@ namespace MatchZy
             {
                 ExitDryrun();
                 Server.PrintToChatAll($"{chatPrefix} Exiting Dry Run; No limits to buy nades.");
-                Server.PrintToChatAll($"{chatPrefix} ÍË³ö .dry »Øµ½PracÄ£Ê½");
+                Server.PrintToChatAll($"{chatPrefix} é€€å‡º .dry å›åˆ°Pracæ¨¡å¼");
             }
             else
             {
                 ReplyToUserCommand(player, "Dry run is only available in Prac Mode!");
-                ReplyToUserCommand(player, "Ö»ÄÜÔÚPracÄ£Ê½ÏÂÊ¹ÓÃ .undry ÃüÁî");
+                ReplyToUserCommand(player, "åªèƒ½åœ¨Pracæ¨¡å¼ä¸‹ä½¿ç”¨ .undry å‘½ä»¤");
             }
             return;
         }
@@ -920,7 +920,7 @@ namespace MatchZy
             }
             if (!unusedBotFound) {
                 Server.PrintToChatAll($"{chatPrefix} Cannot add bots. Type .nobots and switch team, and then re-try .bot");
-                Server.PrintToChatAll($"{chatPrefix} ÎŞ·¨Ìí¼ÓBot. ÏÈÊäÈë .nobots Çå³ıBot£¬È»ºó¸ü»»ÕóÓª£¬ÔÙÊäÈë.bot");
+                Server.PrintToChatAll($"{chatPrefix} æ— æ³•æ·»åŠ Bot. å…ˆè¾“å…¥ .nobots æ¸…é™¤Botï¼Œç„¶åæ›´æ¢é˜µè¥ï¼Œå†è¾“å…¥.bot");
             }
 
             isSpawningBot = false;

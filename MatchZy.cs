@@ -1,4 +1,4 @@
-using CounterStrikeSharp.API;
+ï»¿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
@@ -62,7 +62,7 @@ namespace MatchZy
 
         // Each message is kept in chat display for ~13 seconds, hence setting default chat timer to 12 seconds.
         // Configurable using matchzy_chat_messages_timer_delay <seconds>
-        public int chatTimerDelay = 12;
+        public int chatTimerDelay = 30;
 
         // Game Config
         public bool isKnifeRequired = true;
@@ -168,13 +168,14 @@ namespace MatchZy
                 { ".rethrowdecoy", OnRethrowDecoyCommand },
                 { ".throwdecoy", OnRethrowDecoyCommand },
                 { ".throwmolotov", OnRethrowMolotovCommand },
-                { ".rethrowmolotov", OnRethrowMolotovCommand }
+                { ".rethrowmolotov", OnRethrowMolotovCommand },
+                { ".ws", OnWSCommand },
+                { ".glove", OnWSCommand }
             };
 
             RegisterEventHandler<EventPlayerConnectFull>((@event, info) => {
-                Log($"[FULL CONNECT] Player ID: {@event.Userid.UserId}, Name: {@event.Userid.PlayerName} has connected!");
                 var player = @event.Userid;
-
+                Log($"[FULL CONNECT] Player ID: {@event.Userid.UserId}, Name: {@event.Userid.PlayerName} has connected!");
                 // Handling whitelisted players
                 if (!player.IsBot)
                 {
@@ -194,7 +195,7 @@ namespace MatchZy
                         if (player != null && player.IsValid && IsPlayerAdmin(player))
                         {
                             player.PrintToChat($"{chatPrefix} Server {ChatColors.Olive}{hostname}{ChatColors.Default} expires on {ChatColors.Red}{database.ServerExpireDate}{ChatColors.Default}, contact admin to renew");
-                            player.PrintToChat($"{chatPrefix} ·şÎñÆ÷ {ChatColors.Olive}{hostname}{ChatColors.Default} µ½ÆÚÈÕ {ChatColors.Red}{database.ServerExpireDate}{ChatColors.Default}£¬ÈçĞèĞø×âÇëÁªÏµ¹ÜÀíÔ±");
+                            player.PrintToChat($"{chatPrefix} æœåŠ¡å™¨ {ChatColors.Olive}{hostname}{ChatColors.Default} åˆ°æœŸæ—¥ {ChatColors.Red}{database.ServerExpireDate}{ChatColors.Default}ï¼Œå¦‚éœ€ç»­ç§Ÿè¯·è”ç³»ç®¡ç†å‘˜");
                         }
                     });
 
