@@ -544,10 +544,21 @@ namespace MatchZy
             if (long.TryParse(mapName, out _)) { // Check if mapName is a long for workshop map ids
                 Server.ExecuteCommand($"bot_kick;host_workshop_map \"{mapName}\"");
             } else if (Server.IsMapValid(mapName)) {
-                Server.ExecuteCommand($"bot_kick;map \"{mapName}\"");
+                Server.ExecuteCommand("bot_kick");
+                Server.PrintToChatAll($"{chatPrefix} Changing map to {mapName}");
+                AddTimer(1.0f, () =>
+                {
+                    Server.ExecuteCommand($"map \"{mapName}\"");
+                });
+                
             } else if (Server.IsMapValid("de_" + mapName)) {
                 mapName = "de_" + mapName;
-                Server.ExecuteCommand($"bot_kick;map \"{mapName}\"");
+                Server.ExecuteCommand("bot_kick");
+                Server.PrintToChatAll($"{chatPrefix} Changing map to {mapName}");
+                AddTimer(1.0f, () =>
+                {
+                    Server.ExecuteCommand($"map \"{mapName}\"");
+                });
             }
             else
             {
