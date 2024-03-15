@@ -1120,7 +1120,7 @@ namespace MatchZy
                 return;
             }
             GrenadeThrownData grenadeThrown = nadeSpecificLastGrenadeData[userId][nadeType];
-            AddTimer(grenadeThrown.Delay, () => grenadeThrown.Throw(player));
+            if (grenadeThrown != null) AddTimer(grenadeThrown.Delay, () => grenadeThrown.Throw(player));
         }
 
         public void HandleBackCommand(CCSPlayerController player, string number)
@@ -1166,7 +1166,7 @@ namespace MatchZy
                     {
                         positionNumber -= 1;
                         GrenadeThrownData grenadeThrown = lastGrenadesData[userId][positionNumber];
-                        AddTimer(grenadeThrown.Delay, () => grenadeThrown.Throw(player));
+                        if (grenadeThrown != null) AddTimer(grenadeThrown.Delay, () => grenadeThrown.Throw(player));
                         PrintToPlayerChat(player, $"Throwing grenade of history position: {positionNumber+1}/{lastGrenadesData[userId].Count}");
                     }
                 }
@@ -1224,7 +1224,7 @@ namespace MatchZy
                 return;
             }
             GrenadeThrownData lastGrenade = lastGrenadesData[userId].Last();
-            AddTimer(lastGrenade.Delay, () => lastGrenade.Throw(player));
+            if (lastGrenade != null) AddTimer(lastGrenade.Delay, () => lastGrenade.Throw(player));
         }
 
         [ConsoleCommand("css_throwsmoke", "Throws the last thrown smoke")]

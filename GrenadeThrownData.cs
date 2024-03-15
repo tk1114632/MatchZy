@@ -41,6 +41,10 @@ public class GrenadeThrownData
 
     public void Throw(CCSPlayerController player)
     {
+        if (Position == null || Angle == null || Velocity == null || player == null || !player.PlayerPawn.IsValid || !player.PawnIsAlive)
+        {
+            return;
+        }
         if (Type == "smoke")
         {
             SmokeGrenadeProjectile.Create(Position, Angle, Velocity, player);
