@@ -660,7 +660,7 @@ namespace MatchZy
             if (matchStarted)
             {
                 ReplyToUserCommand(player, "Practice Mode cannot be started when a match has been started!");
-                ReplyToUserCommand(player, "比赛已开始，无法进入Prac模式；请先输入 .endmatch 退出比赛");
+                //ReplyToUserCommand(player, "比赛已开始，无法进入Prac模式；请先输入 .endmatch 退出比赛");
                 return;
             }
 	    
@@ -668,7 +668,7 @@ namespace MatchZy
 			{
                 //StartMatchMode();
                 ReplyToUserCommand(player, "Practice Mode is already ON, use .noprac/.setup to start match mode!");
-                ReplyToUserCommand(player, "已处于Prac模式，输入 .noprac/.setup 退出Prac模式");
+                //ReplyToUserCommand(player, "已处于Prac模式，输入 .noprac/.setup 退出Prac模式");
                 return;
 			}
 	
@@ -689,12 +689,12 @@ namespace MatchZy
             {
                 DryrunOnce();
                 Server.PrintToChatAll($"{chatPrefix} Restarting round with freezetime; use .undry to go back to Prac Mode!");
-                Server.PrintToChatAll($"{chatPrefix} 正在 .dry 刷新（冻结时间、购买限制）; 输入 .undry 返回Prac模式");
+                //Server.PrintToChatAll($"{chatPrefix} 正在 .dry 刷新（冻结时间、购买限制）; 输入 .undry 返回Prac模式");
             }
             else
             {
                 ReplyToUserCommand(player, "Dry run is only available in Prac Mode!");
-                ReplyToUserCommand(player, "只能在Prac模式下使用 .dry 命令");
+                //ReplyToUserCommand(player, "只能在Prac模式下使用 .dry 命令");
             }
             return;
         }
@@ -705,7 +705,7 @@ namespace MatchZy
             if (matchStarted)
             {
                 ReplyToUserCommand(player, "Restart round is disabled when a match has been started!");
-                ReplyToUserCommand(player, "比赛模式下不能 .rr");
+                //ReplyToUserCommand(player, "比赛模式下不能 .rr");
                 return;
             }
 
@@ -713,12 +713,12 @@ namespace MatchZy
             {
                 Server.ExecuteCommand("mp_restartgame 1");
                 Server.PrintToChatAll($"{chatPrefix} Restarting round...");
-                Server.PrintToChatAll($"{chatPrefix} 正在刷新...");
+                //Server.PrintToChatAll($"{chatPrefix} 正在刷新...");
             }
             else
             {
                 ReplyToUserCommand(player, "RR is only available in Prac Mode!");
-                ReplyToUserCommand(player, "只能在Prac模式下使用 .rr 命令");
+                //ReplyToUserCommand(player, "只能在Prac模式下使用 .rr 命令");
             }
             return;
         }
@@ -736,12 +736,12 @@ namespace MatchZy
             {
                 ExitDryrun();
                 Server.PrintToChatAll($"{chatPrefix} Exiting Dry Run; No limits to buy nades.");
-                Server.PrintToChatAll($"{chatPrefix} 退出 .dry 回到Prac模式");
+                //Server.PrintToChatAll($"{chatPrefix} 退出 .dry 回到Prac模式");
             }
             else
             {
                 ReplyToUserCommand(player, "Dry run is only available in Prac Mode!");
-                ReplyToUserCommand(player, "只能在Prac模式下使用 .undry 命令");
+                //ReplyToUserCommand(player, "只能在Prac模式下使用 .undry 命令");
             }
             return;
         }
@@ -920,7 +920,7 @@ namespace MatchZy
             }
             if (!unusedBotFound) {
                 Server.PrintToChatAll($"{chatPrefix} Cannot add bots. Type .nobots and switch team, and then re-try .bot");
-                Server.PrintToChatAll($"{chatPrefix} 无法添加Bot. 先输入 .nobots 清除Bot，然后更换阵营，再输入.bot");
+                //Server.PrintToChatAll($"{chatPrefix} 无法添加Bot. 先输入 .nobots 清除Bot，然后更换阵营，再输入.bot");
             }
 
             isSpawningBot = false;

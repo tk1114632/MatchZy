@@ -423,18 +423,18 @@ namespace MatchZy
                     ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
                     if (isPlayOutEnabled)
                     {
-                        ReplyToUserCommand(player, "当前设置：打满所有局数");
+                        //ReplyToUserCommand(player, "当前设置：打满所有局数");
                     } else
                     {
-                        ReplyToUserCommand(player, "当前设置：赢得13局即结束比赛");
+                       // ReplyToUserCommand(player, "当前设置：赢得13局即结束比赛");
                     }
                 } else {
                     if (isPlayOutEnabled)
                     {
-                        player.PrintToChat($"{chatPrefix} 当前设置：打满所有局数");
+                        //player.PrintToChat($"{chatPrefix} 当前设置：打满所有局数");
                     } else
                     {
-                        player.PrintToChat($"{chatPrefix} 当前设置：赢得13局即结束比赛");
+                        //player.PrintToChat($"{chatPrefix} 当前设置：赢得13局即结束比赛");
                     }
                 }
                 
@@ -459,11 +459,11 @@ namespace MatchZy
                 if (player == null)
                 {
                     ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
-                    ReplyToUserCommand(player, "当前设置：打满所有局数 (Playout all rounds)");
+                    //ReplyToUserCommand(player, "当前设置：打满所有局数 (Playout all rounds)");
                 }
                 else
                 {
-                    player.PrintToChat($"{chatPrefix} 当前设置：打满所有局数 (Playout all rounds)");
+                    //player.PrintToChat($"{chatPrefix} 当前设置：打满所有局数 (Playout all rounds)");
                 }
                 Server.ExecuteCommand("mp_match_can_clinch false");
             }
@@ -483,11 +483,11 @@ namespace MatchZy
                 if (player == null)
                 {
                     ReplyToUserCommand(player, $"Playout is now {playoutStatus}!");
-                    ReplyToUserCommand(player, "当前设置：赢得13局即结束 (Win on 13 rounds)");
+                    //ReplyToUserCommand(player, "当前设置：赢得13局即结束 (Win on 13 rounds)");
                 }
                 else
                 {
-                    player.PrintToChat($"{chatPrefix} 当前设置：赢得13局即结束 (Win on 13 rounds)");
+                    //player.PrintToChat($"{chatPrefix} 当前设置：赢得13局即结束 (Win on 13 rounds)");
                 }
                 Server.ExecuteCommand("mp_match_can_clinch true");
             }
@@ -516,7 +516,7 @@ namespace MatchZy
             if (player != null && player.IsValid && !player.IsBot)
             {
                 player.PrintToChat($"{chatPrefix} Please go to TGPRO Skin Changer {ChatColors.Orange}https://skins.tgpro.net{ChatColors.White} to select Skins/Knifes/Gloves");
-                player.PrintToChat($"{chatPrefix} 请使用TGPRO换皮肤网页 {ChatColors.Orange}https://skins-cn.tgpro.net{ChatColors.White} 来选择皮肤、手套。（需要加速器，登录Steam网页)");
+                //player.PrintToChat($"{chatPrefix} 请使用TGPRO换皮肤网页 {ChatColors.Orange}https://skins-cn.tgpro.net{ChatColors.White} 来选择皮肤、手套。（需要加速器，登录Steam网页)");
                 player.PrintToCenter("Hint: Use Steam in-game browswer to open the link");
                 player.PrintToConsole(" ");
                 player.PrintToConsole("Hint: Use Steam in-game browswer to open the following link");

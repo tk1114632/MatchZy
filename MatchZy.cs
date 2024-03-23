@@ -195,7 +195,7 @@ namespace MatchZy
                         if (player != null && player.IsValid && IsPlayerAdmin(player))
                         {
                             player.PrintToChat($"{chatPrefix} Server {ChatColors.Olive}{hostname}{ChatColors.Default} expires on {ChatColors.Red}{database.ServerExpireDate}{ChatColors.Default}, contact admin to renew");
-                            player.PrintToChat($"{chatPrefix} 服务器 {ChatColors.Olive}{hostname}{ChatColors.Default} 到期日 {ChatColors.Red}{database.ServerExpireDate}{ChatColors.Default}，如需续租请联系管理员");
+                            //player.PrintToChat($"{chatPrefix} 服务器 {ChatColors.Olive}{hostname}{ChatColors.Default} 到期日 {ChatColors.Red}{database.ServerExpireDate}{ChatColors.Default}，如需续租请联系管理员");
                         }
                     });
 

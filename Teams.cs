@@ -48,7 +48,7 @@ namespace MatchZy
             if (player == null || !player.PlayerPawn.IsValid) return;
             if (isPractice) {
                 ReplyToUserCommand(player, "Uncoach is only available in match mode!");
-                ReplyToUserCommand(player, ".uncoach 只能在比赛模式使用");
+                //ReplyToUserCommand(player, ".uncoach 只能在比赛模式使用");
                 return;
             }
 
@@ -69,7 +69,7 @@ namespace MatchZy
             if(coachPlayers.Find(x=>x.player == player) == null)
             {
                 ReplyToUserCommand(player, "You are not coaching any team!");
-                ReplyToUserCommand(player, "你不在教练位");
+                // ReplyToUserCommand(player, "你不在教练位");
                 return;
             }
             else
@@ -77,7 +77,7 @@ namespace MatchZy
                 player.Clan = "";
                 if (player.InGameMoneyServices != null) player.InGameMoneyServices.Account = 0;
                 ReplyToUserCommand(player, "You are now not coaching team anymore!");
-                ReplyToUserCommand(player, "你已退出教练位");
+                //ReplyToUserCommand(player, "你已退出教练位");
                 coachPlayers.Remove(coachPlayers.Find(x => x.player == player));
             }
             
@@ -87,7 +87,7 @@ namespace MatchZy
             if (player == null || !player.PlayerPawn.IsValid) return;
             if (isPractice) {
                 ReplyToUserCommand(player, "Coach is only available in warmup period of match mode!");
-                ReplyToUserCommand(player, ".coach 只能在比赛模式的热身阶段加入教练位");
+                //ReplyToUserCommand(player, ".coach 只能在比赛模式的热身阶段加入教练位");
                 return;
             }
 
@@ -95,14 +95,14 @@ namespace MatchZy
 
             if (side != "t" && side != "ct") {
                 ReplyToUserCommand(player, "Usage: .coach t or .coach ct");
-                ReplyToUserCommand(player, "用法: .coach t 或 .coach ct");
+                //ReplyToUserCommand(player, "用法: .coach t 或 .coach ct");
                 return;
             }
 
             if (matchzyTeam1.coach == player || matchzyTeam2.coach == player) 
             {
                 ReplyToUserCommand(player, "You are already coaching a team!");
-                ReplyToUserCommand(player, "你已经在教练位了");
+                //ReplyToUserCommand(player, "你已经在教练位了");
                 return;
             }
 
