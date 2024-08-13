@@ -23,6 +23,7 @@ namespace MatchZy
         public const string liveCfgPath = "MatchZy/live.cfg";
 
         public string hostname = "";
+        private bool mapPendingChange = false;
 
         private void LoadAdmins() {
             string fileName = "MatchZy/admins.json";
@@ -536,6 +537,8 @@ namespace MatchZy
                 return;
             }
 
+            if (mapPendingChange) return;
+
             if (matchStarted) {
                 player.PrintToChat($"{chatPrefix} Can't change map, please use .endmatch to end the match first.");
                 return;
@@ -546,18 +549,22 @@ namespace MatchZy
             } else if (Server.IsMapValid(mapName)) {
                 Server.ExecuteCommand("bot_kick");
                 Server.PrintToChatAll($"{chatPrefix} Changing map to {mapName}");
-                AddTimer(1.0f, () =>
+                mapPendingChange = true;
+                AddTimer(0.5f, () =>
                 {
                     Server.ExecuteCommand($"map \"{mapName}\"");
+                    mapPendingChange = false;
                 });
                 
             } else if (Server.IsMapValid("de_" + mapName)) {
                 mapName = "de_" + mapName;
                 Server.ExecuteCommand("bot_kick");
                 Server.PrintToChatAll($"{chatPrefix} Changing map to {mapName}");
-                AddTimer(1.0f, () =>
+                mapPendingChange = true;
+                AddTimer(0.5f, () =>
                 {
                     Server.ExecuteCommand($"map \"{mapName}\"");
+                    mapPendingChange = false;
                 });
             }
             else
@@ -893,9 +900,13 @@ namespace MatchZy
             //check if theCoachSpawn is empty
             if (theCoachSpawn.Count == 0) { LoadCoachSpawns(); };
 
-            if (playerController.PlayerPawn.IsValid == false || playerController.Connected != PlayerConnectedState.PlayerConnected) return;
+            if (playerController.PlayerPawn == null || playerController.PlayerPawn.IsValid == false || playerController.Connected != PlayerConnectedState.PlayerConnected) return;
             playerController?.PlayerPawn?.Value?.Teleport(theCoachSpawn[(byte)team].PlayerPosition, theCoachSpawn[(byte)team].PlayerAngle, new CounterStrikeSharp.API.Modules.Utils.Vector(0, 0, 0));
             Log($"Teleported coach to coach spawn: {theCoachSpawn[(byte)team].PlayerPosition.X} {theCoachSpawn[(byte)team].PlayerPosition.Y} {theCoachSpawn[(byte)team].PlayerPosition.Z}");
+            playerController.PlayerPawn.Value.MoveType = MoveType_t.MOVETYPE_OBSOLETE;
+            Schema.SetSchemaValue(playerController.PlayerPawn.Value.Handle, "CBaseEntity", "m_nActualMoveType", 1);
+            Utilities.SetStateChanged(playerController.PlayerPawn.Value, "CBaseEntity", "m_MoveType");
+
         }
 
         public bool RemoveCoachWeaponsAndDropC4(CCSPlayerController? player) //return true if c4 was on coach, false if no c4 was on coach

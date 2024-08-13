@@ -48,7 +48,7 @@ namespace MatchZy
         public Dictionary<int, Dictionary<int, DamagePlayerInfo>> playerDamageInfo = new Dictionary<int, Dictionary<int, DamagePlayerInfo>>();
         private void UpdatePlayerDamageInfo(EventPlayerHurt @event, int targetId)
         {
-            int attackerId = (int)@event.Attacker.UserId!;
+            int attackerId = (int)@event.Attacker?.UserId!;
             if (!playerDamageInfo.TryGetValue(attackerId, out var attackerInfo))
                 playerDamageInfo[attackerId] = attackerInfo = new Dictionary<int, DamagePlayerInfo>();
 

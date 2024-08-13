@@ -206,9 +206,12 @@ namespace MatchZy
         {
             if (IsPlayerAdmin(player, "css_demo", "@css/config"))
             {
-                if(ConVar.Find("tv_enable").GetPrimitiveValue<bool>() == false)
+                if(!IsHLTVEnabled())
                 {
-                    ReplyToUserCommand(player, "Cannot toggle demo recording while CSTV is disabled!");
+                    //ReplyToUserCommand(player, "Cannot toggle demo recording while CSTV is disabled! Please change map or reload the map.");
+                    ReplyToUserCommand(player, "Server randomly crashes due to a CSTV bug since CS2 update on May 2, so CSTV is defaultly off. If you don't mind random crashes and need Demo Recording, please contact TGPRO Admin.");
+                    ReplyToUserCommand(player, "We'll bring back CSTV on as soon as Valve fixes the issue.");
+                    ReplyToUserCommand(player, "CS2 5月的更新带来的CSTV Bug可能造成服务器随机崩溃，因此服务器默认关闭CSTV。如果您不介意服务器随机崩溃并需要录制Demo，请联系TGPRO管理员。");
                     return;
                 }
                 if(isMatchLive)
@@ -217,14 +220,18 @@ namespace MatchZy
                     return;
                 }
                 isDemoRecord = !isDemoRecord;
-                string knifeStatus = isDemoRecord ? "Enabled" : "Disabled";
+                string demoStatus = isDemoRecord ? "Enabled" : "Disabled";
                 if (player == null)
                 {
-                    ReplyToUserCommand(player, $"Demo recording (Demo录制) is now {knifeStatus}!");
+                    ReplyToUserCommand(player, $"Demo recording is now {demoStatus}!");
+                }
+                if (isDemoRecord)
+                {
+                    Server.PrintToChatAll($"{chatPrefix} Demo recording is now {ChatColors.Green}{demoStatus}{ChatColors.Default}!（DEMO录制：已开启）");
                 }
                 else
                 {
-                    player.PrintToChat($"{chatPrefix} Demo recording (Demo录制) is now {ChatColors.Green}{knifeStatus}{ChatColors.Default}!");
+                    Server.PrintToChatAll($"{chatPrefix} Demo recording is now {ChatColors.Red}{demoStatus}{ChatColors.Default}!（DEMO录制：已关闭）");
                 }
             }
             else
@@ -232,6 +239,17 @@ namespace MatchZy
                 SendPlayerNotAdminMessage(player);
             }
         }
+
+        public bool IsHLTVEnabled()
+        {
+            if (ConVar.Find("tv_enable").GetPrimitiveValue<bool>() == true 
+                && Utilities.GetPlayers().Where(p => p != null && p.IsValid && p.IsHLTV).Count() > 0)
+            {
+                return true;
+            }
+            return false;
+        }
+
         [ConsoleCommand("css_stopdemo", "Stop recording demo")]
         public void OnStopDemoCommand(CCSPlayerController? player, CommandInfo? command)
         {

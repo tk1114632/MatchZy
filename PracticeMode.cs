@@ -208,7 +208,7 @@ namespace MatchZy
                     // Adjusting the spawnNumber according to the array index.
                     spawnNumber -= 1;
                     if (spawnsData.ContainsKey(teamNum) && spawnsData[teamNum].Count <= spawnNumber) return;
-                    player.PlayerPawn.Value.Teleport(spawnsData[teamNum][spawnNumber].PlayerPosition, spawnsData[teamNum][spawnNumber].PlayerAngle, new Vector(0, 0, 0));
+                    player.PlayerPawn.Value?.Teleport(spawnsData[teamNum][spawnNumber].PlayerPosition, spawnsData[teamNum][spawnNumber].PlayerAngle, new Vector(0, 0, 0));
                     ReplyToUserCommand(player, $"Moved to spawn: {spawnNumber+1}/{spawnsData[teamNum].Count}");
                 }
                 else
@@ -563,7 +563,7 @@ namespace MatchZy
                                 QAngle loadedPlayerAngle = new QAngle(float.Parse(angArray[0]), float.Parse(angArray[1]), float.Parse(angArray[2]));
 
                                 // Teleport player
-                                player.PlayerPawn.Value.Teleport(loadedPlayerPos, loadedPlayerAngle, new Vector(0, 0, 0));
+                                player.PlayerPawn.Value?.Teleport(loadedPlayerPos, loadedPlayerAngle, new Vector(0, 0, 0));
 
                                 // Change player inv slot
                                 switch (lineupInfo["Type"])
@@ -907,14 +907,18 @@ namespace MatchZy
                     pracUsedBots[tempPlayer.UserId.Value] = new Dictionary<string, object>();
                     Log($"Adding bot {tempPlayer.PlayerName} to pracUsedBots");
 
-                    Position botOwnerPosition = new Position(botOwner.PlayerPawn.Value.CBodyComponent?.SceneNode?.AbsOrigin, botOwner.PlayerPawn.Value.CBodyComponent?.SceneNode?.AbsRotation);
+                    Position botOwnerPosition = new Position(botOwner?.PlayerPawn.Value?.CBodyComponent?.SceneNode?.AbsOrigin, botOwner?.PlayerPawn.Value?.CBodyComponent?.SceneNode?.AbsRotation);
                     // Add key-value pairs to the inner dictionary
                     pracUsedBots[tempPlayer.UserId.Value]["controller"] = tempPlayer;
                     pracUsedBots[tempPlayer.UserId.Value]["position"] = botOwnerPosition;
                     pracUsedBots[tempPlayer.UserId.Value]["owner"] = botOwner;
 
-                    tempPlayer.PlayerPawn.Value.Teleport(botOwnerPosition.PlayerPosition, botOwnerPosition.PlayerAngle, new Vector(0, 0, 0));
-                    TemporarilyDisableCollisions(botOwner, tempPlayer);
+                    tempPlayer.PlayerPawn?.Value?.Teleport(botOwnerPosition.PlayerPosition, botOwnerPosition.PlayerAngle, new Vector(0, 0, 0));
+                    if (botOwner != null && tempPlayer != null)
+                    {
+                        TemporarilyDisableCollisions(botOwner, tempPlayer);
+                    }
+                    
                     unusedBotFound = true;
                 }
             }
@@ -928,7 +932,7 @@ namespace MatchZy
         private CounterStrikeSharp.API.Modules.Timers.Timer? timer;
         public void TemporarilyDisableCollisions(CCSPlayerController p1, CCSPlayerController p2)
         {
-
+            //if (p1 == null || p2 == null || p1.PlayerPawn == null || p2.PlayerPawn == null || p1.PlayerPawn.Value == null || p2.PlayerPawn.Value == null) return;
 
             // Reference collision code: https://github.com/Source2ZE/CS2Fixes/blob/f009e399ff23a81915e5a2b2afda20da2ba93ada/src/events.cpp#L150
             Log($"wobby state: {p1.PlayerPawn.Value.Collision.CollisionGroup}");
@@ -983,13 +987,14 @@ namespace MatchZy
         public HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
         {
             var player = @event.Userid;
+            if (!IsPlayerValid(player)) return HookResult.Continue;
 
             // Respawing a bot where it was actually spawned during practice session
             if (isPractice && player.IsValid && player.IsBot && player.UserId.HasValue)
             {
                 if (pracUsedBots.ContainsKey(player.UserId.Value))
                 {
-                    if (pracUsedBots[player.UserId.Value]["position"] is Position botPosition)
+                    if (pracUsedBots[player.UserId.Value]["position"] is Position botPosition && player.PlayerPawn != null && player.PlayerPawn.Value != null)
                     {
                         player.PlayerPawn.Value.Teleport(botPosition.PlayerPosition, botPosition.PlayerAngle, new Vector(0, 0, 0));
                     }
@@ -1000,11 +1005,14 @@ namespace MatchZy
                     // This most often happens when a player changes team with bot_quota_mode set to fill
                     // Extra bots from bot_add are already handled in SpawnBot
                     // Delay this for a few seconds to prevent crashes
-                    Log($"Kicking bot {player.PlayerName} due to erroneous spawning");
-                    AddTimer(2.5f, () =>
+                    if (player.PlayerName != null)
                     {
-                        Server.ExecuteCommand($"bot_kick {player.PlayerName}");
-                    });
+                        Log($"Kicking bot {player.PlayerName} due to erroneous spawning");
+                        AddTimer(2.5f, () =>
+                        {
+                            Server.ExecuteCommand($"bot_kick {player.PlayerName}");
+                        });
+                    } 
                 }
             }
 

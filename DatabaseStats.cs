@@ -469,7 +469,7 @@ namespace MatchZy
                     {
                         DateTime expireDate = result.expiredate;
                         ServerExpireDate = expireDate.ToString("yyyy-MM-dd");
-                        int timestamp = result.timestamp;
+                        var timestamp = result.timestamp;
                         Log("[DEBUG] expireDate: " + expireDate.ToString("yyyy-MM-dd"));
                         Log("[DEBUG] timestamp: " + timestamp);
                         Log("[DEBUG] DateTime.Now: " + DateTime.Now.ToString("yyyy-MM-dd"));

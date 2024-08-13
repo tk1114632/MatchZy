@@ -175,7 +175,8 @@ namespace MatchZy
 
             RegisterEventHandler<EventPlayerConnectFull>((@event, info) => {
                 var player = @event.Userid;
-                Log($"[FULL CONNECT] Player ID: {@event.Userid.UserId}, Name: {@event.Userid.PlayerName} has connected!");
+                if (player == null) return HookResult.Continue; 
+                Log($"[FULL CONNECT] Player ID: {player.UserId}, Name: {player.PlayerName} has connected!");
                 // Handling whitelisted players
                 if (!player.IsBot)
                 {
@@ -217,21 +218,21 @@ namespace MatchZy
                     {
                         if (!whiteList.Contains(steamId.ToString()))
                         {
-                            Log($"[EventPlayerConnectFull] KICKING PLAYER STEAMID: {steamId}, Name: {@event.Userid.PlayerName} (Not whitelisted!)");
+                            Log($"[EventPlayerConnectFull] KICKING PLAYER STEAMID: {steamId}, Name: {player.PlayerName} (Not whitelisted!)");
                             Server.ExecuteCommand($"kickid {player.UserId}");
                             return HookResult.Continue;
                         }
                     }
                 }
 
-                if (@event.Userid.UserId.HasValue) {
+                if (player.UserId.HasValue) {
                     
-                    playerData[@event.Userid.UserId.Value] = @event.Userid;
+                    playerData[player.UserId.Value] = player;
                     connectedPlayers++;
                     if (readyAvailable && !matchStarted) {
-                        playerReadyStatus[@event.Userid.UserId.Value] = false;
+                        playerReadyStatus[player.UserId.Value] = false;
                     } else {
-                        playerReadyStatus[@event.Userid.UserId.Value] = true;
+                        playerReadyStatus[player.UserId.Value] = true;
                     }
                 }
                 // May not be required, but just to be on safe side so that player data is properly updated in dictionaries
@@ -249,7 +250,8 @@ namespace MatchZy
             });
 
             RegisterEventHandler<EventPlayerDisconnect>((@event, info) => {
-                CCSPlayerController player = @event.Userid;
+                CCSPlayerController? player = @event.Userid;
+                if (player == null) return HookResult.Continue;
                 Log($"[EventPlayerDisconnect] Player ID: {player.UserId}, Name: {player.PlayerName} has disconnected!");
                 if (player.UserId.HasValue) {
                     if (playerReadyStatus.ContainsKey(player.UserId.Value)) {
@@ -309,8 +311,8 @@ namespace MatchZy
             });
 
             RegisterEventHandler<EventPlayerTeam>((@event, info) => {
-                CCSPlayerController player = @event.Userid;
-
+                CCSPlayerController? player = @event.Userid;
+                if (player == null) return HookResult.Continue;
                 if (coachPlayers.Find(x => x.player == player) != null) {
                     @event.Silent = true;
                     return HookResult.Changed;
@@ -362,6 +364,7 @@ namespace MatchZy
             RegisterEventHandler<EventPlayerDeath>((@event, info) => {
                 // Setting money back to 16000 when a player dies in warmup
                 var player = @event.Userid;
+                if (player == null) return HookResult.Continue;
                 if (isWarmup) {
                     if (player.InGameMoneyServices != null) player.InGameMoneyServices.Account = 16000;
                 }
@@ -370,15 +373,17 @@ namespace MatchZy
 
             RegisterEventHandler<EventPlayerHurt>((@event, info) =>
 			{
-				CCSPlayerController attacker = @event.Attacker;
-                CCSPlayerController victim = @event.Userid;
+				CCSPlayerController? attacker = @event.Attacker;
+                CCSPlayerController? victim = @event.Userid;
+
+                if (attacker == null || victim == null) return HookResult.Continue;
 
                 if (isPractice)
                 {
                     if (victim.IsBot) {
                         int damage = @event.DmgHealth;
                         int postDamageHealth = @event.Health;
-                        @event.Attacker.PrintToChat($"{chatPrefix} {damage} damage to BOT {victim.PlayerName}({postDamageHealth} health)");
+                        attacker.PrintToChat($"{chatPrefix} {damage} damage to BOT {victim.PlayerName}({postDamageHealth} health)");
                     }
                     return HookResult.Continue;
                 }
@@ -386,9 +391,9 @@ namespace MatchZy
 				if (!attacker.IsValid || attacker.IsBot && !(@event.DmgHealth > 0 || @event.DmgArmor > 0))
 					return HookResult.Continue;
                 if (matchStarted) {
-                    if (@event.Userid.TeamNum != attacker.TeamNum)
+                    if (victim.TeamNum != attacker.TeamNum)
                     {
-                        int targetId = (int)@event.Userid.UserId!;
+                        int targetId = (int)victim.UserId!;
 
                         UpdatePlayerDamageInfo(@event, targetId);
                     }
@@ -543,13 +548,16 @@ namespace MatchZy
 
             RegisterEventHandler<EventPlayerBlind>((@event, info) =>
             {
-                CCSPlayerController player = @event.Userid;
+                CCSPlayerController? player = @event.Userid;
+
+                if (player == null) return HookResult.Continue;
+
                 if (!isPractice) return HookResult.Continue;
 
-                if (@event.Attacker.IsValid && player.SteamID != @event.Attacker.SteamID)
+                if (@event.Attacker != null && @event.Attacker.IsValid && player.SteamID != @event.Attacker.SteamID)
                 {
                     double roundedBlindDuration = Math.Round(@event.BlindDuration, 2);
-                    @event.Attacker.PrintToChat($"{chatPrefix} Flashed {@event.Userid.PlayerName}. Blind time: {roundedBlindDuration} seconds");
+                    @event.Attacker.PrintToChat($"{chatPrefix} Flashed {player.PlayerName}. Blind time: {roundedBlindDuration} seconds");
                 }
                 var userId = player.UserId;
                 if (userId != null && noFlashList.Contains((int)userId))

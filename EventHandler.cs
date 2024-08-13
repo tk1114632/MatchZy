@@ -94,7 +94,7 @@ public partial class MatchZy
         try
         {
             CCSPlayerController player = @event.Userid;
-            if (!player.UserId.HasValue) return HookResult.Continue;
+            if (player == null || player.UserId == null) return HookResult.Continue;
             int userId = player.UserId.Value;
 
             if (playerReadyStatus.ContainsKey(userId))
@@ -277,7 +277,7 @@ public partial class MatchZy
 
     public HookResult EventSmokegrenadeDetonateHandler(EventSmokegrenadeDetonate @event, GameEventInfo info)
     {
-        if (!isPractice) return HookResult.Continue;
+        if (!isPractice || @event.Userid == null) return HookResult.Continue;
         if(lastGrenadeThrownTime.TryGetValue(@event.Entityid, out var thrownTime)) 
         {
             PrintToPlayerChat(@event.Userid, $"Smoke thrown by {@event.Userid.PlayerName} took {(DateTime.Now - thrownTime).TotalSeconds:0.00}s to detonate");
@@ -288,7 +288,7 @@ public partial class MatchZy
 
     public HookResult EventFlashbangDetonateHandler(EventFlashbangDetonate @event, GameEventInfo info)
     {
-        if (!isPractice) return HookResult.Continue;
+        if (!isPractice || @event.Userid == null) return HookResult.Continue;
         if(lastGrenadeThrownTime.TryGetValue(@event.Entityid, out var thrownTime)) 
         {
             PrintToPlayerChat(@event.Userid, $"Flash thrown by {@event.Userid.PlayerName} took {(DateTime.Now - thrownTime).TotalSeconds:0.00}s to detonate");
@@ -299,7 +299,7 @@ public partial class MatchZy
 
     public HookResult EventHegrenadeDetonateHandler(EventHegrenadeDetonate @event, GameEventInfo info)
     {
-        if (!isPractice) return HookResult.Continue;
+        if (!isPractice || @event.Userid == null) return HookResult.Continue;
         if(lastGrenadeThrownTime.TryGetValue(@event.Entityid, out var thrownTime)) 
         {
             PrintToPlayerChat(@event.Userid, $"Grenade thrown by {@event.Userid.PlayerName} took {(DateTime.Now - thrownTime).TotalSeconds:0.00}s to detonate");
@@ -311,7 +311,7 @@ public partial class MatchZy
 
     public HookResult EventMolotovDetonateHandler(EventMolotovDetonate @event, GameEventInfo info)
     {
-        if (!isPractice) return HookResult.Continue;
+        if (!isPractice || @event.Userid == null) return HookResult.Continue;
         if(lastGrenadeThrownTime.TryGetValue(@event.Get<int>("entityid"), out var thrownTime)) 
         {
             PrintToPlayerChat(@event.Userid, $"Molotov thrown by {@event.Userid.PlayerName} took {(DateTime.Now - thrownTime).TotalSeconds:0.00}s to detonate");
@@ -322,7 +322,7 @@ public partial class MatchZy
 
     public HookResult EventDecoyDetonateHandler(EventDecoyDetonate @event, GameEventInfo info)
     {
-        if (!isPractice) return HookResult.Continue;
+        if (!isPractice || @event.Userid == null) return HookResult.Continue;
         if(lastGrenadeThrownTime.TryGetValue(@event.Entityid, out var thrownTime)) 
         {
             PrintToPlayerChat(@event.Userid, $"Decoy thrown by {@event.Userid.PlayerName} took {(DateTime.Now - thrownTime).TotalSeconds:0.00}s to detonate");
