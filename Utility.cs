@@ -86,7 +86,21 @@ namespace MatchZy
 
         private void CheckDBAccess(string steamId, string hostname)
         {
-            string url = $"http://api.tgpro.top/dbapi/scrim_checkaccess.php?steamid={steamId}&hostname={Uri.EscapeDataString(hostname)}";
+            string url;
+            if (String.IsNullOrEmpty(checkDBAccessURL))
+            {
+                url = $"http://api.tgpro.top/dbapi/scrim_checkaccess.php?steamid={steamId}&hostname={Uri.EscapeDataString(hostname)}";
+            }
+            else
+            {
+
+            }
+            //remove the last / if / is at the end of checkDBAccessURL
+            if (checkDBAccessURL.EndsWith("/"))
+            {
+                checkDBAccessURL = checkDBAccessURL.Substring(0, checkDBAccessURL.Length - 1);
+            }
+            url = $"http://{checkDBAccessURL}/scrim_checkaccess.php?steamid={steamId}&hostname={Uri.EscapeDataString(hostname)}";
             using HttpClient client = new HttpClient();
             try
             {
@@ -151,12 +165,12 @@ namespace MatchZy
                     string unreadyPlayerList = string.Join(", ", unreadyPlayers);
                     //Server.PrintToChatAll($"{chatPrefix} Unready: {unreadyPlayerList}. Please type .r to ready up! [Minimum ready players: {ChatColors.Green}{minimumReadyRequired}{ChatColors.Default}]");
                     Server.PrintToChatAll($"{chatPrefix} Type .r to ready up, admin use .r3 to start (管理员使用 .r3 开始比赛)");
-                    Server.PrintToChatAll($"{chatPrefix} Weapon Skin Changer is available now. Type {ChatColors.Green}.ws{ChatColors.White} to print the Skin Selector website");
+                    //Server.PrintToChatAll($"{chatPrefix} Weapon Skin Changer is available now. Type {ChatColors.Green}.ws{ChatColors.White} to print the Skin Selector website");
                 } else {
                     int countOfReadyPlayers = playerReadyStatus.Count(kv => kv.Value == true);
                     //Server.PrintToChatAll($"{chatPrefix} Minimum ready players required {ChatColors.Green}{minimumReadyRequired}{ChatColors.Default}, current ready players: {ChatColors.Green}{countOfReadyPlayers}{ChatColors.Default}");
                     Server.PrintToChatAll($"{chatPrefix} Type .r to ready up, admin use .r3 to start (管理员使用 .r3 开始比赛)");
-                    Server.PrintToChatAll($"{chatPrefix} Weapon Skin Changer is available now. Type {ChatColors.Green}.ws{ChatColors.White} to print the Skin Selector website");
+                    //Server.PrintToChatAll($"{chatPrefix} Weapon Skin Changer is available now. Type {ChatColors.Green}.ws{ChatColors.White} to print the Skin Selector website");
                 }
             }
         }
@@ -836,7 +850,12 @@ namespace MatchZy
                 playerController.ChangeTeam(CsTeam.Spectator);
                 Server.NextFrame(() =>
                 {
-                    if (playerController.IsValid) { playerController.ChangeTeam(team); }
+                    if (playerController.IsValid) { 
+                        playerController.ChangeTeam(team);
+                        playerController.InGameMoneyServices!.Account = 0;
+                        Utilities.SetStateChanged(playerController, "CCSPlayerController", "m_pInGameMoneyServices");
+                    }
+                    
                 });
 
             }

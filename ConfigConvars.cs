@@ -160,5 +160,21 @@ namespace MatchZy
                 command.ReplyToCommand("Usage: matchzy_max_saved_last_grenades <number>");
             }
         }
+
+        [ConsoleCommand("matchzy_checkDBaccess_url", "URL to check if the database is accessible. Default value: https://www.google.com")]
+        public void MatchZyCheckDBAccessURL(CCSPlayerController? player, CommandInfo command)
+        {
+            if (player != null) return;
+            string args = command.ArgString;
+
+            if (!string.IsNullOrWhiteSpace(args))
+            {
+                checkDBAccessURL = args;
+            }
+            else
+            {
+                command.ReplyToCommand($"matchzy_checkDBaccess_url = {checkDBAccessURL}");
+            }
+        }
     }
 }

@@ -25,6 +25,8 @@ namespace MatchZy
         public string chatPrefix = $"[{ChatColors.Green}MatchZy{ChatColors.Default}]";
         public string adminChatPrefix = $"[{ChatColors.Red}ADMIN{ChatColors.Default}]";
 
+        public string checkDBAccessURL = "";
+
         // Match phase data
         public bool isPractice = false;
         public bool readyAvailable = true;
@@ -135,7 +137,12 @@ namespace MatchZy
                 { ".reload_admins", OnReloadAdmins },
                 { ".prac", OnPracCommand },
                 { ".bot", OnBotCommand },
+                { ".cbot", OnCrouchBotCommand },
+                { ".crouchbot", OnCrouchBotCommand },
+                { ".boost", OnBoostBotCommand },
+                { ".crouchboost", OnCrouchBoostBotCommand },
                 { ".nobots", OnNoBotsCommand },
+                { ".nobot", OnNoBotsCommand },
                 { ".god", OnGodCommand },
                 { ".ff", OnFastForwardCommand },
                 { ".fastforward", OnFastForwardCommand },

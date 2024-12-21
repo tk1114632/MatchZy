@@ -208,10 +208,10 @@ namespace MatchZy
             {
                 if(!IsHLTVEnabled())
                 {
-                    //ReplyToUserCommand(player, "Cannot toggle demo recording while CSTV is disabled! Please change map or reload the map.");
-                    ReplyToUserCommand(player, "Server randomly crashes due to a CSTV bug since CS2 update on May 2, so CSTV is defaultly off. If you don't mind random crashes and need Demo Recording, please contact TGPRO Admin.");
-                    ReplyToUserCommand(player, "We'll bring back CSTV on as soon as Valve fixes the issue.");
-                    ReplyToUserCommand(player, "CS2 5月的更新带来的CSTV Bug可能造成服务器随机崩溃，因此服务器默认关闭CSTV。如果您不介意服务器随机崩溃并需要录制Demo，请联系TGPRO管理员。");
+                    ReplyToUserCommand(player, "Cannot toggle demo recording while CSTV is disabled! Please change map or reload the map.");
+                    ReplyToUserCommand(player, "CSTV未开启，无法开启Demo录制！请更换地图或重载地图。");
+                    //ReplyToUserCommand(player, "Server randomly crashes due to a CSTV bug since CS2 update on May 2, so CSTV is defaultly off. If you don't mind random crashes and need Demo Recording, please contact TGPRO Admin.");
+                    //ReplyToUserCommand(player, "CS2 5月的更新带来的CSTV Bug可能造成服务器随机崩溃，因此服务器默认关闭CSTV。如果您不介意服务器随机崩溃并需要录制Demo，请联系TGPRO管理员。");
                     return;
                 }
                 if(isMatchLive)

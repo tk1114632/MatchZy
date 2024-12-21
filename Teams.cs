@@ -3,6 +3,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Utils;
+using CounterStrikeSharp.API.Modules.Entities;
 
 
 namespace MatchZy
@@ -202,6 +203,8 @@ namespace MatchZy
                 coach.player.ActionTrackingServices!.MatchStats.Deaths = 0;
                 coach.player.ActionTrackingServices!.MatchStats.Assists = 0;
                 coach.player.ActionTrackingServices!.MatchStats.Damage = 0;
+
+                Utilities.SetStateChanged(coach.player, "CCSPlayerController", "m_pInGameMoneyServices");
 
                 MoveCoachNew(coach.player, coach.team);
                 

@@ -853,82 +853,133 @@ namespace MatchZy
             }
         }
 
-        [ConsoleCommand("css_bot", "Teleport to spawn")]
+        [ConsoleCommand("css_bot", "Spawns a bot at the player's position")]
         public void OnBotCommand(CCSPlayerController? player, CommandInfo? command)
         {
-            if (!isPractice || player == null) return;
-            // Checking if any of the Position List is empty
-            if (spawnsData.Values.Any(list => list.Count == 0)) GetSpawns();
-
-            isSpawningBot = true;
-
-            // !bot/.bot command is made using a lot of workarounds, as there is no direct way to create a bot entity and spawn it in CSSharp
-            // Hence there can be some issues with this approach. This will be revamped when we will be able to create entities and manipulate them.
-            if (player.TeamNum == (byte)CsTeam.CounterTerrorist)
-            {
-                //Server.ExecuteCommand("bot_join_team T");
-                Server.ExecuteCommand("bot_add_t");
-                Utilities.CreateEntityByName<CCSPlayerController>("bot");
-            }
-            else if (player.TeamNum == (byte)CsTeam.Terrorist)
-            {
-                //Server.ExecuteCommand("bot_join_team CT");
-                Server.ExecuteCommand("bot_add_ct");
-            }
-            
-            // Adding a small timer so that bot can be added in the world
-            // Once bot is added, we teleport it to the requested position
-            AddTimer(0.1f, () => SpawnBot(player));
-            Server.ExecuteCommand("bot_stop 1");
-            Server.ExecuteCommand("bot_freeze 1");
-            Server.ExecuteCommand("bot_zombie 1");
+            AddBot(player, false);
         }
 
-        private void SpawnBot(CCSPlayerController botOwner)
+        [ConsoleCommand("css_cbot", "Spawns a crouched bot at the player's position")]
+        [ConsoleCommand("css_crouchbot", "Spawns a crouched bot at the player's position")]
+        public void OnCrouchBotCommand(CCSPlayerController? player, CommandInfo? command)
         {
-            var playerEntities = Utilities.FindAllEntitiesByDesignerName<CCSPlayerController>("cs_player_controller");
-            bool unusedBotFound = false;
-            foreach (var tempPlayer in playerEntities)
-            {
-                if (!tempPlayer.IsBot || tempPlayer.IsHLTV) continue;
-                if (tempPlayer.UserId.HasValue)
-                {
-                    if (!pracUsedBots.ContainsKey(tempPlayer.UserId.Value) && unusedBotFound)
-                    {
-                        Log($"UNUSED BOT FOUND: {tempPlayer.UserId.Value} EXECUTING: kickid {tempPlayer.UserId.Value}");
-                        // Kicking the unused bot. We have to do this because bot_add_t/bot_add_ct may add multiple bots but we need only 1, so we kick the remaining unused ones
-                        Server.ExecuteCommand($"kickid {tempPlayer.UserId.Value}");
-                        continue;
-                    }
-                    if (pracUsedBots.ContainsKey(tempPlayer.UserId.Value))
-                    {
-                        continue;
-                    }
-                    pracUsedBots[tempPlayer.UserId.Value] = new Dictionary<string, object>();
-                    Log($"Adding bot {tempPlayer.PlayerName} to pracUsedBots");
-
-                    Position botOwnerPosition = new Position(botOwner?.PlayerPawn.Value?.CBodyComponent?.SceneNode?.AbsOrigin, botOwner?.PlayerPawn.Value?.CBodyComponent?.SceneNode?.AbsRotation);
-                    // Add key-value pairs to the inner dictionary
-                    pracUsedBots[tempPlayer.UserId.Value]["controller"] = tempPlayer;
-                    pracUsedBots[tempPlayer.UserId.Value]["position"] = botOwnerPosition;
-                    pracUsedBots[tempPlayer.UserId.Value]["owner"] = botOwner;
-
-                    tempPlayer.PlayerPawn?.Value?.Teleport(botOwnerPosition.PlayerPosition, botOwnerPosition.PlayerAngle, new Vector(0, 0, 0));
-                    if (botOwner != null && tempPlayer != null)
-                    {
-                        TemporarilyDisableCollisions(botOwner, tempPlayer);
-                    }
-                    
-                    unusedBotFound = true;
-                }
-            }
-            if (!unusedBotFound) {
-                Server.PrintToChatAll($"{chatPrefix} Cannot add bots. Type .nobots and switch team, and then re-try .bot");
-                Server.PrintToChatAll($"{chatPrefix} 无法添加Bot. 先输入 .nobots 清除Bot，然后更换阵营，再输入.bot");
-            }
-
-            isSpawningBot = false;
+            AddBot(player, true);
         }
+
+        [ConsoleCommand("css_boost", "Spawns a bot at the player's position and boost the player on it")]
+        public void OnBoostBotCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (!isPractice) return;
+            AddBot(player, false);
+            AddTimer(0.2f, () => ElevatePlayer(player));
+        }
+
+        [ConsoleCommand("css_crouchboost", "Spawns a crouched bot at the player's position and boost the player on it")]
+        public void OnCrouchBoostBotCommand(CCSPlayerController? player, CommandInfo? command)
+        {
+            if (!isPractice) return;
+            AddBot(player, true);
+            AddTimer(0.2f, () => ElevatePlayer(player));
+        }
+
+        private void AddBot(CCSPlayerController? player, bool crouch)
+        {
+            try
+            {
+                if (!isPractice || player == null || !player.IsValid || !player.PlayerPawn.IsValid || player.PlayerPawn.Value == null) return;
+                CCSPlayer_MovementServices movementService = new(player.PlayerPawn.Value.MovementServices!.Handle);
+
+                if ((int)movementService.DuckAmount == 1)
+                {
+                    // Player was crouching while using .bot command
+                    crouch = true;
+                }
+                isSpawningBot = true;
+                // !bot/.bot command is made using a lot of workarounds, as there is no direct way to create a bot entity and spawn it in CSSharp
+                // Hence there can be some issues with this approach. This will be revamped when we will be able to fake clients.
+                if (player.TeamNum == (byte)CsTeam.CounterTerrorist)
+                {
+                    Server.ExecuteCommand("bot_join_team T");
+                    Server.ExecuteCommand("bot_add_t");
+                }
+                else if (player.TeamNum == (byte)CsTeam.Terrorist)
+                {
+                    Server.ExecuteCommand("bot_join_team CT");
+                    Server.ExecuteCommand("bot_add_ct");
+                }
+
+                // Once bot is added, we teleport it to the requested position
+                AddTimer(0.1f, () => SpawnBot(player, crouch));
+                Server.ExecuteCommand("bot_stop 1");
+                Server.ExecuteCommand("bot_freeze 1");
+                Server.ExecuteCommand("bot_zombie 1");
+            }
+            catch (JsonException ex)
+            {
+                Log($"[AddBot - FATAL] Error: {ex.Message}");
+            }
+        }
+
+        private void SpawnBot(CCSPlayerController botOwner, bool crouch)
+        {
+            try
+            {
+                if (!IsPlayerValid(botOwner)) return;
+                var playerEntities = Utilities.FindAllEntitiesByDesignerName<CCSPlayerController>("cs_player_controller");
+                bool unusedBotFound = false;
+                foreach (var tempPlayer in playerEntities)
+                {
+                    if (!IsPlayerValid(tempPlayer)) continue;
+                    if (!tempPlayer.IsBot || tempPlayer.IsHLTV) continue;
+                    if (tempPlayer.UserId.HasValue)
+                    {
+                        if (!pracUsedBots.ContainsKey(tempPlayer.UserId.Value) && unusedBotFound)
+                        {
+                            Log($"UNUSED BOT FOUND: {tempPlayer.UserId.Value} EXECUTING: kickid {tempPlayer.UserId.Value}");
+                            // Kicking the unused bot. We have to do this because bot_add_t/bot_add_ct may add multiple bots but we need only 1, so we kick the remaining unused ones
+                            Server.ExecuteCommand($"kickid {tempPlayer.UserId.Value}");
+                            continue;
+                        }
+                        if (pracUsedBots.ContainsKey(tempPlayer.UserId.Value))
+                        {
+                            continue;
+                        }
+                        pracUsedBots[tempPlayer.UserId.Value] = new Dictionary<string, object>();
+
+                        Position botOwnerPosition = new Position(botOwner.PlayerPawn.Value!.CBodyComponent?.SceneNode?.AbsOrigin!, botOwner.PlayerPawn.Value!.CBodyComponent?.SceneNode?.AbsRotation!);
+                        // Add key-value pairs to the inner dictionary
+                        pracUsedBots[tempPlayer.UserId.Value]["controller"] = tempPlayer;
+                        pracUsedBots[tempPlayer.UserId.Value]["position"] = botOwnerPosition;
+                        pracUsedBots[tempPlayer.UserId.Value]["owner"] = botOwner;
+                        pracUsedBots[tempPlayer.UserId.Value]["crouchstate"] = crouch;
+
+                        if (crouch)
+                        {
+                            CCSPlayer_MovementServices movementService = new(tempPlayer.PlayerPawn.Value!.MovementServices!.Handle);
+                            AddTimer(0.1f, () => movementService.DuckAmount = 1);
+                            AddTimer(0.2f, () => tempPlayer.PlayerPawn.Value!.Bot!.IsCrouching = true);
+                        }
+
+                        tempPlayer.PlayerPawn.Value!.Teleport(botOwnerPosition.PlayerPosition, botOwnerPosition.PlayerAngle, new Vector(0, 0, 0));
+                        TemporarilyDisableCollisions(botOwner, tempPlayer);
+                        unusedBotFound = true;
+                    }
+                }
+                if (!unusedBotFound)
+                {
+                    // Server.PrintToChatAll($"{chatPrefix} Cannot add bots, the team is full! Use .nobots to remove the current bots.");
+                    Server.PrintToChatAll($"{chatPrefix} Cannot add bots. Type .nobots and switch team, and then re-try .bot");
+                    Server.PrintToChatAll($"{chatPrefix} 无法添加Bot. 先输入 .nobots 清除Bot，然后更换阵营，再输入.bot");
+                }
+
+                isSpawningBot = false;
+            }
+            catch (JsonException ex)
+            {
+                Log($"[SpawnBot - FATAL] Error: {ex.Message}");
+            }
+        }
+
         private CounterStrikeSharp.API.Modules.Timers.Timer? timer;
         public void TemporarilyDisableCollisions(CCSPlayerController p1, CCSPlayerController p2)
         {
@@ -980,8 +1031,11 @@ namespace MatchZy
                     p1min.Y <= p2max.Y && p1max.Y >= p2min.Y &&
                     p1min.Z <= p2max.Z && p1max.Z >= p2min.Z;
         }
-
-
+        private static void ElevatePlayer(CCSPlayerController? player)
+        {
+            if (player == null || !player.IsValid || !player.PlayerPawn.IsValid || player.PlayerPawn.Value == null) return;
+            player.PlayerPawn.Value.Teleport(new Vector(player.PlayerPawn.Value.CBodyComponent!.SceneNode!.AbsOrigin.X, player.PlayerPawn.Value.CBodyComponent!.SceneNode!.AbsOrigin.Y, player.PlayerPawn.Value.CBodyComponent!.SceneNode!.AbsOrigin.Z + 80.0f), player.PlayerPawn.Value.EyeAngles, new Vector(0, 0, 0));
+        }
 
         [GameEventHandler]
         public HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
@@ -990,13 +1044,30 @@ namespace MatchZy
             if (!IsPlayerValid(player)) return HookResult.Continue;
 
             // Respawing a bot where it was actually spawned during practice session
-            if (isPractice && player.IsValid && player.IsBot && player.UserId.HasValue)
+            Log($"Player {player.PlayerName} is spawned");
+            if (isPractice && player!.IsValid && player.IsBot && player.UserId.HasValue)
             {
+                Log($"2222222");
                 if (pracUsedBots.ContainsKey(player.UserId.Value))
                 {
-                    if (pracUsedBots[player.UserId.Value]["position"] is Position botPosition && player.PlayerPawn != null && player.PlayerPawn.Value != null)
+                    Log($"3333333");
+                    if (pracUsedBots[player.UserId.Value]["position"] is Position botPosition)
                     {
-                        player.PlayerPawn.Value.Teleport(botPosition.PlayerPosition, botPosition.PlayerAngle, new Vector(0, 0, 0));
+                        Log($"44444444");
+                        player.PlayerPawn.Value?.Teleport(botPosition.PlayerPosition, botPosition.PlayerAngle, new Vector(0, 0, 0));
+                        bool isCrouched = (bool)pracUsedBots[player.UserId.Value]["crouchstate"];
+                        if (isCrouched)
+                        {
+                            player.PlayerPawn.Value!.Flags |= (uint)PlayerFlags.FL_DUCKING;
+                            CCSPlayer_MovementServices movementService = new(player.PlayerPawn.Value.MovementServices!.Handle);
+                            AddTimer(0.1f, () => movementService.DuckAmount = 1);
+                            AddTimer(0.2f, () => player.PlayerPawn.Value.Bot!.IsCrouching = true);
+                        }
+                        CCSPlayerController? botOwner = (CCSPlayerController)pracUsedBots[player.UserId.Value]["owner"];
+                        if (botOwner != null && botOwner.IsValid && botOwner.PlayerPawn != null && botOwner.PlayerPawn.IsValid)
+                        {
+                            AddTimer(0.2f, () => TemporarilyDisableCollisions(botOwner, player));
+                        }
                     }
                 }
                 else if (!isSpawningBot && !player.IsHLTV)
@@ -1005,17 +1076,13 @@ namespace MatchZy
                     // This most often happens when a player changes team with bot_quota_mode set to fill
                     // Extra bots from bot_add are already handled in SpawnBot
                     // Delay this for a few seconds to prevent crashes
-                    if (player.PlayerName != null)
+                    Log($"Kicking bot {player.PlayerName} due to erroneous spawning");
+                    AddTimer(2.5f, () =>
                     {
-                        Log($"Kicking bot {player.PlayerName} due to erroneous spawning");
-                        AddTimer(2.5f, () =>
-                        {
-                            Server.ExecuteCommand($"bot_kick {player.PlayerName}");
-                        });
-                    } 
+                        Server.ExecuteCommand($"bot_kick {player.PlayerName}");
+                    });
                 }
             }
-
 
             return HookResult.Continue;
         }
