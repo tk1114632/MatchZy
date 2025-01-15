@@ -480,7 +480,8 @@ namespace MatchZy
                             Log($"[GetServerExpireDateAndKickPlayerIfNeeded] Server expired more than 2 days, kicking player");
                             if(player.IsValid && !player.IsBot)
                             {
-                                Server.NextFrame(() => player.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_CREATE_SERVER_FAILED));
+                                Server.NextFrame(() => Server.ExecuteCommand($"kickid {player.UserId}"));
+                                //Server.NextFrame(() => player.Disconnect(NetworkDisconnectionReason.NETWORK_DISCONNECT_CREATE_SERVER_FAILED));
                             }
                         }
                         else if(expireDate < DateTime.Now && expireDate.AddDays(2) >= DateTime.Now)

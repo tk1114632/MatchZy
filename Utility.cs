@@ -86,19 +86,15 @@ namespace MatchZy
 
         private void CheckDBAccess(string steamId, string hostname)
         {
-            string url;
+            string url = "";
             if (String.IsNullOrEmpty(checkDBAccessURL))
             {
-                url = $"http://api.tgpro.top/dbapi/scrim_checkaccess.php?steamid={steamId}&hostname={Uri.EscapeDataString(hostname)}";
-            }
-            else
-            {
-
+                checkDBAccessURL = "api.tgpro.top/dbapi";
             }
             //remove the last / if / is at the end of checkDBAccessURL
             if (checkDBAccessURL.EndsWith("/"))
             {
-                checkDBAccessURL = checkDBAccessURL.Substring(0, checkDBAccessURL.Length - 1);
+                checkDBAccessURL = checkDBAccessURL.Substring(0, checkDBAccessURL.Length - 1);               
             }
             url = $"http://{checkDBAccessURL}/scrim_checkaccess.php?steamid={steamId}&hostname={Uri.EscapeDataString(hostname)}";
             using HttpClient client = new HttpClient();
