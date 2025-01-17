@@ -176,8 +176,8 @@ namespace MatchZy
                 { ".throwdecoy", OnRethrowDecoyCommand },
                 { ".throwmolotov", OnRethrowMolotovCommand },
                 { ".rethrowmolotov", OnRethrowMolotovCommand },
-                { ".ws", OnWSCommand },
-                { ".glove", OnWSCommand }
+                //{ ".ws", OnWSCommand },
+                //{ ".glove", OnWSCommand }
             };
 
             RegisterEventHandler<EventPlayerConnectFull>((@event, info) => {
